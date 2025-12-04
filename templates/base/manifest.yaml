@@ -1,0 +1,41 @@
+# templates/base/manifest.yaml
+# 기본 템플릿 매니페스트
+
+template_id: base
+display_name: "기본 템플릿"
+doc_type: inspection
+version: "1.0"
+
+# DOCX placeholder 목록
+docx_placeholders:
+  - wo_no
+  - line
+  - part_no
+  - lot
+  - result
+  - inspector
+  - date
+  - remark
+  - measurements  # 표 전체
+
+# XLSX 셀 매핑
+xlsx_mappings:
+  # 우선순위 1: Named Range (권장)
+  named_ranges: {}
+
+  # 우선순위 2: 직접 셀 주소
+  cell_addresses: {}
+
+  # 측정 데이터 (동적 행)
+  measurements:
+    sheet: "Sheet1"
+    start_row: 5
+    columns:
+      item: "A"
+      spec: "B"
+      measured: "C"
+      unit: "D"
+      result: "E"
+
+  # 충돌 처리 정책
+  conflict_policy: "fail"  # fail | warn_and_use_named_range

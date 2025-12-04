@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "session_id": "26595710-dcfd-4544-8e51-f11620a9accc",
+  "created_at": "2025-12-04T03:21:29.292002+00:00",
+  "immutable": true,
+  "messages": [
+    {
+      "role": "user",
+      "content": "WO-001, L1 ë¼ì¸ìëë¤",
+      "timestamp": "2025-12-04T03:21:29.294031+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "메시지를 받았습니다. 분석 중...",
+      "timestamp": "2025-12-04T03:21:29.296574+00:00",
+      "attachments": []
+    },
+    {
+      "role": "user",
+      "content": "[파일 첨부: test_file.txt]",
+      "timestamp": "2025-12-04T03:23:22.102616+00:00",
+      "attachments": [
+        {
+          "filename": "test_file.txt",
+          "size": 48,
+          "path": "inputs/uploads/test_file.txt"
+        }
+      ]
+    }
+  ],
+  "ocr_results": {},
+  "extraction_result": null,
+  "user_corrections": []
+}

@@ -1,0 +1,19 @@
+{# 채팅 메시지 컴포넌트 #}
+
+<div class="message {{ role }}">
+    <div class="message-content">
+        {{ content | safe }}
+    </div>
+
+    {% if attachments %}
+    <div class="message-attachments">
+        {% for attachment in attachments %}
+        <span class="file-chip">📎 {{ attachment.filename }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="message-meta">
+        <small>{{ timestamp }}</small>
+    </div>
+</div>

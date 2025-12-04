@@ -1,0 +1,80 @@
+{# 추출 결과 표시 컴포넌트 #}
+
+<div class="extraction-result">
+    <h3>추출된 정보를 확인해주세요</h3>
+
+    <div class="fields-grid">
+        {% for field_name, field_value in fields.items() %}
+        <div class="field-item {% if field_name in missing_fields %}missing{% endif %}">
+            <label>{{ field_labels.get(field_name, field_name) }}</label>
+
+            {% if field_value %}
+            <span class="value">✅ {{ field_value }}</span>
+            {% elif field_name in overridable %}
+            <span class="value missing">
+                ⚠️ (입력 안됨)
+                <button class="btn-small"
+                        hx-get="/api/chat/override-dialog?field={{ field_name }}"
+                        hx-target="#override-modal"
+                        hx-swap="innerHTML">
+                    없이 진행
+                </button>
+            </span>
+            {% else %}
+            <span class="value error">❌ (필수)</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if measurements %}
+    <div class="measurements-table">
+        <h4>측정 데이터 ({{ measurements | length }}행)</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>항목</th>
+                    <th>규격</th>
+                    <th>측정값</th>
+                    <th>결과</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in measurements %}
+                <tr>
+                    <td>{{ row.item }}</td>
+                    <td>{{ row.spec }}</td>
+                    <td>{{ row.measured }}</td>
+                    <td>
+                        {% if row.result == 'PASS' %}
+                        <span class="badge success">PASS</span>
+                        {% else %}
+                        <span class="badge error">FAIL</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if warnings %}
+    <div class="warnings">
+        {% for warning in warnings %}
+        <div class="warning-item">⚠️ {{ warning }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="actions">
+        <button class="btn-secondary" hx-post="/api/chat/correct" hx-target="#chat-messages" hx-swap="beforeend">
+            수정하기
+        </button>
+        <button class="btn-primary" hx-post="/api/generate" hx-target="#chat-messages" hx-swap="beforeend">
+            문서 생성하기
+        </button>
+    </div>
+</div>
+
+<div id="override-modal" class="modal"></div>

@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0",
+  "session_id": "9d4395d1-39b1-424d-9b4e-9c8f52bb5bcc",
+  "created_at": "2025-12-04T03:50:58.893754+00:00",
+  "immutable": true,
+  "messages": [
+    {
+      "role": "user",
+      "content": "WO No: WO-001, Line: L1, Part No: PART-A, Inspector: 홍길동, Result: PASS",
+      "timestamp": "2025-12-04T03:50:58.895937+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "메시지를 받았습니다. 분석 중...",
+      "timestamp": "2025-12-04T03:50:58.897240+00:00",
+      "attachments": []
+    }
+  ],
+  "ocr_results": {},
+  "extraction_result": {
+    "success": true,
+    "fields": {
+      "wo_no": "WO-001",
+      "line": "L1",
+      "part_no": "PART-A",
+      "lot": null,
+      "result": "PASS",
+      "inspector": "홍길동",
+      "date": null,
+      "remark": null
+    },
+    "measurements": [],
+    "missing_fields": [
+      "lot",
+      "date"
+    ],
+    "warnings": [
+      "필수 필드 'lot'(로트번호)가 누락되었습니다",
+      "참조 필드 'date'(검사일)가 누락되었습니다"
+    ],
+    "confidence": 0.85,
+    "suggested_template_id": null,
+    "model_requested": "claude-opus-4-5-20251101",
+    "model_used": "claude-opus-4-5-20251101",
+    "extracted_at": "2025-12-04T03:51:05.515350+00:00",
+    "error_message": null
+  },
+  "user_corrections": []
+}

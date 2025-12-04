@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}작업 이력 - Manufacturing Docs{% endblock %}
+
+{% block content %}
+<div class="container">
+    <header class="page-header">
+        <div>
+            <h1>📁 작업 이력</h1>
+            <p>생성된 문서를 조회하고 다운로드합니다.</p>
+        </div>
+        <a href="/chat" class="btn-primary">+ 새 문서</a>
+    </header>
+
+    <!-- 필터 -->
+    <div class="filters">
+        <input type="text" id="search-input"
+               placeholder="Job ID 또는 WO 검색..."
+               hx-get="/api/generate/jobs"
+               hx-target="#job-list"
+               hx-trigger="keyup changed delay:300ms"
+               hx-include="this">
+
+        <select id="status-filter"
+                hx-get="/api/generate/jobs"
+                hx-target="#job-list"
+                hx-trigger="change"
+                hx-include="this">
+            <option value="">전체 상태</option>
+            <option value="success">성공</option>
+            <option value="failed">실패</option>
+            <option value="pending">진행 중</option>
+        </select>
+
+        <select id="limit-filter" name="limit"
+                hx-get="/api/generate/jobs"
+                hx-target="#job-list"
+                hx-trigger="change"
+                hx-include="this">
+            <option value="20">20개</option>
+            <option value="50">50개</option>
+            <option value="100">100개</option>
+        </select>
+    </div>
+
+    <!-- 작업 목록 -->
+    <div id="job-list"
+         hx-get="/api/generate/jobs"
+         hx-trigger="load"
+         hx-swap="innerHTML">
+        <div class="loading-placeholder">로딩 중...</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 파일 다운로드
+function downloadFile(jobId, filename) {
+    window.location.href = `/api/generate/jobs/${jobId}/download/${filename}`;
+}
+
+// 전체 다운로드 (ZIP)
+function downloadAll(jobId) {
+    window.location.href = `/api/generate/jobs/${jobId}/download`;
+}
+
+// 작업 상세 보기
+function viewJobDetail(jobId) {
+    window.location.href = `/generate/jobs/${jobId}`;
+}
+</script>
+{% endblock %}

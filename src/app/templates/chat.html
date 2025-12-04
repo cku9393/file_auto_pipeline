@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}문서 생성 - 채팅{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <header class="chat-header">
+        <h1>📄 문서 생성</h1>
+        <select id="template-select" class="template-selector">
+            <option value="base">기본 템플릿</option>
+            {% for template in templates %}
+            <option value="{{ template.template_id }}">{{ template.display_name }}</option>
+            {% endfor %}
+        </select>
+    </header>
+
+    <div id="chat-messages" class="messages">
+        <div class="message assistant">
+            <div class="message-content">
+                안녕하세요! 문서 생성을 도와드릴게요.<br>
+                작업 정보를 자유롭게 입력해주세요.<br>
+                <small>(엑셀, 사진, PDF 등 파일도 첨부 가능합니다)</small>
+            </div>
+        </div>
+    </div>
+
+    <form id="chat-form" class="chat-input-form"
+          hx-post="/api/chat/message"
+          hx-target="#chat-messages"
+          hx-swap="beforeend"
+          hx-indicator="#loading">
+
+        <input type="hidden" name="session_id" id="session-id" value="{{ session_id }}">
+
+        <div id="file-preview" class="file-preview"></div>
+
+        <div class="input-row">
+            <textarea name="content"
+                      placeholder="메시지 입력... (예: WO-001, L1 라인, PART-A 품번이야)"
+                      rows="2"
+                      required></textarea>
+
+            <div class="input-buttons">
+                <input type="file" id="file-input" name="files" multiple hidden
+                       accept=".xlsx,.xls,.pdf,.jpg,.jpeg,.png">
+                <button type="button" class="btn-icon" onclick="document.getElementById('file-input').click()">
+                    📎
+                </button>
+                <button type="submit" class="btn-primary">전송</button>
+            </div>
+        </div>
+    </form>
+
+    <div id="loading" class="loading-indicator">
+        <span>처리 중...</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 파일 선택 시 미리보기
+document.getElementById('file-input').addEventListener('change', function(e) {
+    const preview = document.getElementById('file-preview');
+    preview.innerHTML = '';
+
+    for (const file of e.target.files) {
+        const chip = document.createElement('span');
+        chip.className = 'file-chip';
+        chip.textContent = `📎 ${file.name}`;
+        preview.appendChild(chip);
+    }
+});
+
+// 폼 제출 후 입력 초기화
+document.getElementById('chat-form').addEventListener('htmx:afterRequest', function(e) {
+    if (e.detail.successful) {
+        e.target.querySelector('textarea').value = '';
+        document.getElementById('file-preview').innerHTML = '';
+        document.getElementById('file-input').value = '';
+    }
+});
+</script>
+{% endblock %}

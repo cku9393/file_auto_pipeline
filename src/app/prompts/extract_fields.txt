@@ -1,0 +1,55 @@
+당신은 제조 검사 문서에서 정보를 추출하는 전문가입니다.
+
+## 입력 계약 (definition.yaml 기준)
+{definition_yaml_content}
+
+## 사용자 입력
+{user_input}
+
+## OCR 추출 텍스트 (있는 경우)
+{ocr_text}
+
+## 지시사항
+1. 위 입력에서 필드를 추출하세요. 필드명은 definition.yaml의 키를 그대로 사용하세요.
+2. 측정 데이터가 있다면 표 형식으로 추출하세요.
+3. 누락된 필수(critical) 필드가 있으면 missing_fields에 명시하세요.
+4. 불확실하거나 추정한 값이 있으면 warnings에 명시하세요.
+
+## 필드 타입별 처리
+- token: 공백 정리 (앞뒤 trim, 연속 공백 → 단일 공백)
+- free_text: 원문 유지 (trim만)
+- number: 숫자만 추출 (단위 제외)
+
+## 결과 판정 정규화
+result 필드는 다음으로 정규화:
+- PASS: "PASS", "OK", "합격", "O"
+- FAIL: "FAIL", "NG", "불합격", "X"
+
+## 응답 형식 (JSON만, 설명 없이)
+```json
+{
+  "fields": {
+    "wo_no": "추출된 값",
+    "line": "추출된 값",
+    "part_no": "추출된 값",
+    "lot": "추출된 값",
+    "result": "PASS 또는 FAIL",
+    "inspector": "추출된 값 또는 null",
+    "date": "추출된 값 또는 null",
+    "remark": "추출된 값 또는 null"
+  },
+  "measurements": [
+    {
+      "item": "항목명",
+      "spec": "규격",
+      "measured": "측정값 (숫자)",
+      "unit": "단위 또는 null",
+      "result": "PASS 또는 FAIL"
+    }
+  ],
+  "missing_fields": ["누락된 필수 필드명"],
+  "warnings": ["불확실한 추출에 대한 경고"],
+  "confidence": 0.0-1.0,
+  "suggested_template_id": "추천 템플릿 또는 null"
+}
+```

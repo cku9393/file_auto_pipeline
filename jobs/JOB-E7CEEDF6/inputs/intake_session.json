@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "session_id": "6f6c474e-56be-401a-9c9a-8a54dcff551f",
+  "created_at": "2025-12-04T04:57:54.617955+00:00",
+  "immutable": true,
+  "messages": [
+    {
+      "role": "user",
+      "content": "WO No: WO-001, Line: L1, Part No: PART-A, LOT: LOT-2024-001, Inspector: 홍길동, Result: PASS, Date: 2024-12-04",
+      "timestamp": "2025-12-04T04:57:54.619984+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "메시지를 받았습니다. 분석 중...",
+      "timestamp": "2025-12-04T04:57:54.621743+00:00",
+      "attachments": []
+    }
+  ],
+  "ocr_results": {},
+  "extraction_result": {
+    "success": true,
+    "fields": {
+      "wo_no": "WO-001",
+      "line": "L1",
+      "part_no": "PART-A",
+      "lot": "LOT-2024-001",
+      "result": "PASS",
+      "inspector": "홍길동",
+      "date": "2024-12-04"
+    },
+    "measurements": [],
+    "missing_fields": [],
+    "warnings": [],
+    "confidence": null,
+    "suggested_template_id": null,
+    "model_requested": "regex",
+    "model_used": "regex",
+    "extracted_at": null,
+    "error_message": null
+  },
+  "user_corrections": []
+}

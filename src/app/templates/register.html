@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}템플릿 등록 - Manufacturing Docs{% endblock %}
+
+{% block content %}
+<div class="container">
+    <header>
+        <h1>📄 템플릿 등록</h1>
+        <p>예시 문서를 업로드하여 새 템플릿을 생성합니다.</p>
+    </header>
+
+    <form class="register-form"
+          hx-post="/api/templates"
+          hx-encoding="multipart/form-data"
+          hx-target="#result"
+          hx-indicator="#loading">
+
+        <section class="form-section">
+            <h2>1단계: 기본 정보</h2>
+
+            <div class="form-group">
+                <label for="template_id">템플릿 ID *</label>
+                <input type="text" id="template_id" name="template_id"
+                       placeholder="customer_a_inspection"
+                       pattern="[a-z0-9_]+"
+                       maxlength="50"
+                       required>
+                <small>소문자, 숫자, 밑줄만 허용 (최대 50자)</small>
+            </div>
+
+            <div class="form-group">
+                <label for="display_name">표시 이름 *</label>
+                <input type="text" id="display_name" name="display_name"
+                       placeholder="고객사A 검사성적서"
+                       required>
+            </div>
+
+            <div class="form-group">
+                <label for="doc_type">문서 타입</label>
+                <select id="doc_type" name="doc_type">
+                    <option value="inspection">검사성적서</option>
+                    <option value="report">보고서</option>
+                    <option value="certificate">성적서</option>
+                    <option value="other">기타</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="description">설명</label>
+                <textarea id="description" name="description"
+                          placeholder="템플릿에 대한 설명..."
+                          rows="3"></textarea>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h2>2단계: 예시 파일 업로드</h2>
+
+            <div class="form-group">
+                <label for="example_docx">예시 Word 파일 (.docx)</label>
+                <input type="file" id="example_docx" name="example_docx"
+                       accept=".docx">
+                <small>placeholder가 있으면 자동 감지됩니다</small>
+            </div>
+
+            <div class="form-group">
+                <label for="example_xlsx">예시 Excel 파일 (.xlsx)</label>
+                <input type="file" id="example_xlsx" name="example_xlsx"
+                       accept=".xlsx">
+                <small>Named Range 사용 권장</small>
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <button type="button" class="btn-secondary" onclick="history.back()">취소</button>
+            <button type="submit" class="btn-primary">분석 및 등록</button>
+        </div>
+    </form>
+
+    <div id="loading" class="loading-indicator">
+        <span>분석 중...</span>
+    </div>
+
+    <div id="result"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 템플릿 ID 자동 생성 (표시 이름 기반)
+document.getElementById('display_name').addEventListener('blur', function(e) {
+    const templateIdInput = document.getElementById('template_id');
+    if (!templateIdInput.value) {
+        const suggested = e.target.value
+            .toLowerCase()
+            .replace(/[^a-z0-9가-힣]/g, '_')
+            .replace(/_{2,}/g, '_')
+            .replace(/^_|_$/g, '')
+            .substring(0, 50);
+        templateIdInput.value = suggested;
+    }
+});
+</script>
+{% endblock %}

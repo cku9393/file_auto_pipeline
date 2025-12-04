@@ -1,0 +1,123 @@
+# =============================================================================
+# configs/default.yaml - 기본 런타임 설정
+# =============================================================================
+# 환경별 오버라이드: production.yaml, development.yaml 등
+# 
+# 사용법:
+#   pixi run pipeline jobs/demo_001                              # default.yaml 사용
+#   pixi run pipeline jobs/demo_001 --config configs/production.yaml
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Pipeline: 파이프라인 동작 설정
+# -----------------------------------------------------------------------------
+
+pipeline:
+  # SSOT 락 timeout (초)
+  # 다른 프로세스가 job.json 생성 중일 때 대기 시간
+  # 기본값: 2초 (40회 × 0.05초)
+  lock_timeout_seconds: 2
+  lock_retry_interval: 0.05
+  lock_max_retries: 40
+
+# -----------------------------------------------------------------------------
+# Paths: 경로 설정 (job 폴더 기준 상대 경로)
+# -----------------------------------------------------------------------------
+
+paths:
+  # 입력
+  packet_filename: "packet.xlsx"
+  photos_raw: "photos/raw"
+
+  # 출력
+  photos_derived: "photos/derived"
+  photos_trash: "photos/trash"
+  deliverables: "deliverables"
+  logs: "logs"
+
+  # SSOT
+  job_json: "job.json"
+  lock_dir: ".job_json.lock"
+
+# -----------------------------------------------------------------------------
+# Logging: 로깅 설정
+# -----------------------------------------------------------------------------
+
+logging:
+  # 로그 레벨: DEBUG, INFO, WARNING, ERROR
+  level: INFO
+
+  # 로그 포맷: json, text
+  format: json
+
+  # 콘솔 출력 여부
+  console: true
+
+  # 경고 원본값 최대 길이 (truncate)
+  warn_original_value_max_length: 200
+
+# -----------------------------------------------------------------------------
+# Features: 기능 플래그
+# -----------------------------------------------------------------------------
+
+features:
+  # 사진 슬롯 자동 수정 (기본 비활성)
+  autofix_photos: false
+
+  # derived 사진 강제 재생성 (기본 비활성)
+  rebuild_derived: false
+
+  # PDF 보고서 생성 (기본 비활성)
+  generate_pdf: false
+
+  # 측정 CSV 항상 생성 (기본: 8행 초과 시만)
+  always_generate_csv: false
+
+# -----------------------------------------------------------------------------
+# Hashing: 해시 설정
+# -----------------------------------------------------------------------------
+
+hashing:
+  # 해시 알고리즘
+  algorithm: sha256
+
+  # packet_hash에서 제외할 필드 타입
+  # free_text는 판정 동일성에 영향 없으므로 제외
+  exclude_from_packet_hash:
+    - free_text
+
+# -----------------------------------------------------------------------------
+# Report: 보고서 설정 (SSOT for output)
+# -----------------------------------------------------------------------------
+# 입력 계약은 definition.yaml, 출력 설정은 여기서 관리
+# -----------------------------------------------------------------------------
+
+report:
+  # HTML 템플릿 경로 (프로젝트 루트 기준)
+  template: "templates/customer_report.html.j2"
+
+  # 보고서에 표시할 최대 측정 행 수
+  # 초과 시 measurements.csv 별도 생성
+  max_measurement_rows: 8
+
+  # 보고서 헤더에 포함할 필드 순서
+  header_fields:
+    - wo_no
+    - line
+    - part_no
+    - lot
+    - date
+    - inspector
+
+  # 사진 표시 순서 (슬롯 key 기준)
+  photo_order:
+    - overview
+    - label_serial
+    - measurement_setup
+    - defect
+
+  # 타임존 (보고서 시간 표시용)
+  timezone: "Asia/Seoul"
+
+  # 날짜 포맷
+  date_format: "%Y-%m-%d %H:%M:%S"

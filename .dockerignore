@@ -1,0 +1,107 @@
+# =============================================================================
+# Docker Ignore - 빌드 컨텍스트에서 제외할 파일
+# =============================================================================
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv
+venv/
+ENV/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Documentation
+docs/_build/
+
+# Logs and databases
+*.log
+*.sqlite
+*.db
+
+# Environment files (보안)
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jobs data (런타임 생성)
+jobs/
+
+# Logs directory (런타임 생성)
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+tmp/
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.docker/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Documentation (빌드에 불필요)
+*.md
+!README.md
+LICENSE
+
+# Test files (프로덕션 이미지에 불필요)
+tests/
+conftest.py
+pytest.ini

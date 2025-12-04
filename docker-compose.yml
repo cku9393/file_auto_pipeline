@@ -1,0 +1,66 @@
+# =============================================================================
+# Manufacturing Docs Pipeline - Docker Compose
+# =============================================================================
+# 실행: docker compose up --build
+# 개발: docker compose up --build -d && docker compose logs -f
+# 중지: docker compose down
+# =============================================================================
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: file-auto-pipeline
+    ports:
+      - "8000:8000"
+    volumes:
+      # 작업 데이터 영속화
+      - ./jobs:/app/jobs
+      # 템플릿 영속화 (커스텀 템플릿 유지)
+      - ./templates:/app/templates
+      # 로그 영속화
+      - ./logs:/app/logs
+    environment:
+      # AI API 키 (.env 파일에서 로드)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      # 애플리케이션 설정
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - TEMPLATES_DIR=/app/templates
+      - JOBS_DIR=/app/jobs
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # 개발용 서비스 (핫 리로드)
+  web-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: file-auto-pipeline-dev
+    ports:
+      - "8001:8000"
+    volumes:
+      # 소스 코드 마운트 (핫 리로드용)
+      - ./src:/app/src:ro
+      - ./jobs:/app/jobs
+      - ./templates:/app/templates
+      - ./logs:/app/logs
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+      - TEMPLATES_DIR=/app/templates
+      - JOBS_DIR=/app/jobs
+    env_file:
+      - .env
+    command: ["uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    profiles:
+      - dev

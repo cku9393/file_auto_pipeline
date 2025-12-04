@@ -1,0 +1,284 @@
+# =============================================================================
+# definition.yaml - 입력 계약 SSOT (Single Source of Truth)
+# =============================================================================
+# 이 파일은 파이프라인의 입력 파싱 및 검증 규칙을 정의합니다.
+# 
+# SSOT 범위: 입력(packet.xlsx, photos) 파싱/검증 규칙
+# 출력(보고서) 설정은 configs/*.yaml에서 관리
+#
+# 변경 시 definition_version을 업데이트하세요.
+# 참조: docs/spec.md - Section 2. Input Contract
+# =============================================================================
+
+definition_version: "1.1"
+
+# =============================================================================
+# Override 정책 (v1.1 신규)
+# =============================================================================
+# "없이 진행" 기능을 위한 정책입니다.
+#
+# 핵심 규칙:
+#   critical + override_allowed=false → 어떤 경로로도 null 불가 (reject)
+#   critical + override_allowed=true  → 사유 필수 입력 후 진행 가능
+#   reference + override_allowed=true → 사유 입력 후 진행 가능
+#
+# override 로그 필수 키: field_or_slot, reason, user, timestamp
+# =============================================================================
+
+override_defaults:
+  # critical 필드 기본값
+  critical_override_allowed: false
+  critical_requires_reason: true
+  
+  # reference 필드 기본값
+  reference_override_allowed: true
+  reference_requires_reason: true
+  
+  # 사진 슬롯 기본값
+  photo_required_override_allowed: false
+  photo_optional_override_allowed: true
+
+# -----------------------------------------------------------------------------
+# Fields: Excel에서 추출할 필드 정의
+# -----------------------------------------------------------------------------
+# 필드명 규칙:
+#   - 여기서 정의한 키(wo_no, line 등)는 코드, job.json, 로그에서 동일하게 사용
+#   - line_id, lineId 등 변형 금지
+#
+# type:
+#   - token: strip + 연속 공백을 단일 공백으로 (식별자용)
+#   - free_text: strip만, 내부 줄바꿈 유지 (비고, 메모용)
+#   - number: Decimal 변환, trailing zero 제거
+#
+# importance:
+#   - critical: 누락/파싱실패/NaN 시 reject
+#   - reference: 파싱실패 시 null + warn, NaN은 여전히 reject
+# -----------------------------------------------------------------------------
+
+fields:
+  # === Critical Fields (필수, 누락 시 reject) ===
+  
+  wo_no:
+    type: token
+    importance: critical
+    override_allowed: false      # 절대 생략 불가
+    aliases:
+      - "WO No"
+      - "WO No."
+      - "Work Order"
+      - "작업지시번호"
+      - "W/O"
+    description: "작업 지시 번호"
+
+  line:
+    type: token
+    importance: critical
+    override_allowed: false      # 절대 생략 불가
+    aliases:
+      - "Line"
+      - "Line No"
+      - "라인"
+      - "라인번호"
+    description: "생산 라인 ID"
+
+  part_no:
+    type: token
+    importance: critical
+    override_allowed: false      # 절대 생략 불가
+    aliases:
+      - "Part No"
+      - "Part No."
+      - "Part Number"
+      - "부품번호"
+      - "P/N"
+    description: "부품 번호"
+
+  lot:
+    type: token
+    importance: critical
+    override_allowed: false      # 절대 생략 불가
+    aliases:
+      - "Lot"
+      - "Lot No"
+      - "Lot No."
+      - "로트"
+      - "로트번호"
+    description: "로트 번호"
+
+  result:
+    type: token
+    importance: critical
+    override_allowed: false      # 절대 생략 불가
+    aliases:
+      - "Result"
+      - "결과"
+      - "판정"
+      - "Final Result"
+    description: "최종 검사 결과 (PASS/FAIL)"
+    # 유효값 검증은 validate 단계에서 수행
+
+  # === Reference Fields (선택, 누락 시 null + warn) ===
+
+  inspector:
+    type: token
+    importance: reference
+    override_allowed: true       # 사유 입력 후 생략 가능
+    override_requires_reason: true
+    aliases:
+      - "Inspector"
+      - "검사자"
+      - "Inspected By"
+      - "담당자"
+    description: "검사 담당자"
+
+  date:
+    type: token
+    importance: reference
+    override_allowed: true       # 사유 입력 후 생략 가능
+    override_requires_reason: true
+    aliases:
+      - "Date"
+      - "검사일"
+      - "일자"
+      - "Inspection Date"
+    description: "검사 일자"
+
+  remark:
+    type: free_text
+    importance: reference
+    override_allowed: true       # 사유 입력 후 생략 가능
+    override_requires_reason: false  # 비고는 사유 불필요
+    aliases:
+      - "Remark"
+      - "Remarks"
+      - "비고"
+      - "Notes"
+      - "Comment"
+    description: "비고/메모 (자유 형식)"
+
+# -----------------------------------------------------------------------------
+# Measurement Table: 측정 데이터 테이블 감지 및 파싱
+# -----------------------------------------------------------------------------
+# Excel 시트에서 측정 테이블을 자동 감지합니다.
+# detection.headers에 지정된 헤더가 모두 존재하는 행을 테이블 시작으로 인식합니다.
+# -----------------------------------------------------------------------------
+
+measurement_table:
+  detection:
+    # 이 헤더들이 모두 존재하는 행을 테이블 헤더로 인식
+    headers:
+      - "SPEC"
+      - "MEASURED"
+    # 최소 행 수 (헤더 제외)
+    min_rows: 1
+
+  columns:
+    item:
+      aliases: ["Item", "No", "No.", "항목", "#"]
+      description: "측정 항목 번호/이름"
+    
+    spec:
+      aliases: ["SPEC", "Spec", "규격", "Specification", "기준값"]
+      description: "규격/기준값"
+    
+    measured:
+      aliases: ["MEASURED", "Measured", "측정값", "Actual", "실측값"]
+      description: "실제 측정값"
+    
+    unit:
+      aliases: ["Unit", "단위"]
+      description: "측정 단위"
+      optional: true
+    
+    result:
+      aliases: ["Result", "판정", "OK/NG", "Pass/Fail"]
+      description: "항목별 판정 결과"
+      optional: true
+
+  # 측정 테이블 전용 검증 규칙 (measurement_table.validation)
+  # 주의: 최하단 validation 섹션(result 필드 정규화)과 별개임
+  validation:
+    # NaN/Inf는 항상 reject
+    reject_nan_inf: true
+    # 빈 측정값 허용 여부
+    allow_empty_measured: false
+
+# -----------------------------------------------------------------------------
+# Photos: 사진 슬롯 정의
+# -----------------------------------------------------------------------------
+# photos/raw/ 폴더에서 슬롯별로 사진을 선택합니다.
+# basename으로 시작하고 allowed_extensions 중 하나인 파일을 매칭합니다.
+# -----------------------------------------------------------------------------
+
+photos:
+  # 허용 확장자 (소문자로 정규화하여 비교)
+  allowed_extensions:
+    - ".jpg"
+    - ".jpeg"
+    - ".png"
+
+  # 중복 파일 발견 시 선택 우선순위
+  # 예: 01_overview.jpg와 01_overview.png가 모두 있으면 .jpg 선택
+  prefer_order:
+    - ".jpg"
+    - ".jpeg"
+    - ".png"
+
+  # 슬롯 정의
+  slots:
+    - key: overview
+      basename: "01_overview"
+      required: true
+      override_allowed: false    # 필수 사진, 절대 생략 불가
+      description: "제품/작업 전체 개요 사진"
+
+    - key: label_serial
+      basename: "02_label_serial"
+      required: true
+      override_allowed: false    # 필수 사진, 절대 생략 불가
+      description: "라벨/시리얼 번호 사진"
+
+    - key: measurement_setup
+      basename: "03_measurement_setup"
+      required: false
+      override_allowed: true     # 선택 사진, 사유 입력 후 생략 가능
+      override_requires_reason: true
+      description: "측정 장비 세팅 사진"
+
+    - key: defect
+      basename: "04_defect"
+      required: false
+      override_allowed: true     # 선택 사진, 사유 입력 후 생략 가능
+      override_requires_reason: false  # 결함 없으면 당연히 없음
+      description: "결함 발견 시 결함 부위 사진"
+
+# -----------------------------------------------------------------------------
+# Validation: result 필드 정규화 규칙
+# -----------------------------------------------------------------------------
+# 주의: measurement_table.validation(측정 테이블 전용)과 별개임
+# 출력(보고서) 설정은 configs/*.yaml의 report 섹션에서 관리합니다.
+# -----------------------------------------------------------------------------
+
+validation:
+  # result 필드 유효값
+  result_valid_values:
+    - "PASS"
+    - "FAIL"
+    - "OK"
+    - "NG"
+    - "합격"
+    - "불합격"
+
+  # PASS로 정규화할 값들
+  result_pass_aliases:
+    - "PASS"
+    - "OK"
+    - "합격"
+    - "O"
+
+  # FAIL로 정규화할 값들
+  result_fail_aliases:
+    - "FAIL"
+    - "NG"
+    - "불합격"
+    - "X"

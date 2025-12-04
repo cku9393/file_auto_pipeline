@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}템플릿 관리 - Manufacturing Docs{% endblock %}
+
+{% block content %}
+<div class="container">
+    <header class="page-header">
+        <div>
+            <h1>📋 템플릿 관리</h1>
+            <p>보고서 템플릿을 관리합니다.</p>
+        </div>
+        <a href="/templates/register" class="btn-primary">+ 새 템플릿</a>
+    </header>
+
+    <!-- 필터 -->
+    <div class="filters">
+        <select id="status-filter"
+                hx-get="/api/templates"
+                hx-target="#template-list"
+                hx-trigger="change"
+                hx-include="this">
+            <option value="">전체 상태</option>
+            <option value="ready">사용 가능</option>
+            <option value="draft">작성 중</option>
+            <option value="archived">보관됨</option>
+        </select>
+
+        <select id="category-filter"
+                hx-get="/api/templates"
+                hx-target="#template-list"
+                hx-trigger="change"
+                hx-include="this">
+            <option value="all">전체</option>
+            <option value="base">기본 템플릿</option>
+            <option value="custom">사용자 정의</option>
+        </select>
+    </div>
+
+    <!-- 템플릿 목록 -->
+    <div id="template-list"
+         hx-get="/api/templates"
+         hx-trigger="load"
+         hx-swap="innerHTML">
+        <div class="loading-placeholder">로딩 중...</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 템플릿 상태 변경
+function changeStatus(templateId, newStatus) {
+    htmx.ajax('PATCH', `/api/templates/${templateId}`, {
+        values: { status: newStatus },
+        target: '#template-list',
+        swap: 'innerHTML'
+    }).then(() => {
+        htmx.trigger('#template-list', 'load');
+    });
+}
+
+// 템플릿 삭제
+function deleteTemplate(templateId) {
+    if (!confirm(`정말 '${templateId}' 템플릿을 삭제하시겠습니까?`)) {
+        return;
+    }
+
+    htmx.ajax('DELETE', `/api/templates/${templateId}`, {
+        target: '#template-list',
+        swap: 'innerHTML'
+    }).then(() => {
+        htmx.trigger('#template-list', 'load');
+    });
+}
+</script>
+{% endblock %}

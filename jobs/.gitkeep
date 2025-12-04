@@ -1,0 +1,18 @@
+# 작업 폴더 저장소
+# 각 작업은 <job_folder>/ 폴더로 구성됨
+#
+# 구조:
+# jobs/<job_folder>/
+# ├── job.json             # SSOT
+# ├── inputs/              # 입력 원본 보관
+# │   ├── intake_session.json
+# │   └── uploads/
+# ├── photos/
+# │   ├── raw/
+# │   └── derived/
+# │       └── _trash/
+# ├── logs/
+# │   └── run_<run_id>.json
+# └── deliverables/
+#     ├── report.docx
+#     └── report.xlsx
