@@ -9,6 +9,7 @@ import json
 import os
 import threading
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import patch
 
@@ -325,3 +326,347 @@ class TestEnsureJobJson:
             ensure_job_json(job_dir, packet, test_config, lambda p: "NEW")
 
         assert exc_info.value.code == ErrorCodes.PACKET_JOB_MISMATCH
+
+
+# =============================================================================
+# Lock 해제 실패 테스트
+# =============================================================================
+
+class TestJobLockReleaseFailure:
+    """락 해제 실패 시 warning 로그 테스트."""
+
+    def test_lock_release_failure_logs_warning(self, tmp_path: Path, test_config: dict, caplog):
+        """락 해제 실패 시 warning 로그가 남는지 확인."""
+        import logging
+        from src.core import ssot_job
+
+        job_dir = tmp_path / "job"
+        job_dir.mkdir()
+
+        caplog.set_level(logging.WARNING, logger="src.core.ssot_job")
+
+        # 원본 os.rmdir 저장
+        original_rmdir = os.rmdir
+
+        def failing_rmdir(path):
+            raise OSError("Permission denied")
+
+        # job_lock 진입 후 rmdir만 mock
+        with job_lock(job_dir, test_config) as lock_dir:
+            # 컨텍스트 내에서 rmdir을 실패하도록 교체
+            ssot_job.os.rmdir = failing_rmdir
+
+        # 원본 복원
+        ssot_job.os.rmdir = original_rmdir
+
+        # warning 로그 확인
+        assert any("Lock release failed" in record.message for record in caplog.records)
+        assert any("Manual cleanup may be required" in record.message for record in caplog.records)
+
+    def test_lock_release_failure_includes_path_in_log(self, tmp_path: Path, test_config: dict, caplog):
+        """락 해제 실패 시 로그에 경로 정보 포함 확인."""
+        import logging
+
+        job_dir = tmp_path / "job"
+        job_dir.mkdir()
+
+        caplog.set_level(logging.WARNING, logger="src.core.ssot_job")
+
+        with patch("src.core.ssot_job.os.rmdir") as mock_rmdir:
+            mock_rmdir.side_effect = OSError("Device busy")
+
+            with job_lock(job_dir, test_config):
+                pass
+
+        # 로그에 job_dir 경로 포함
+        warning_logs = [r.message for r in caplog.records if r.levelname == "WARNING"]
+        assert len(warning_logs) >= 1
+        assert str(job_dir) in warning_logs[0]
+
+
+# =============================================================================
+# fsync 실패 테스트
+# =============================================================================
+
+class TestAtomicWriteFsyncFailure:
+    """fsync 실패 시 warning 로그 테스트."""
+
+    def test_fsync_failure_logs_warning(self, tmp_path: Path, caplog):
+        """fsync 실패 시 warning 로그가 남는지 확인."""
+        import logging
+
+        file_path = tmp_path / "test.json"
+        data = {"key": "value"}
+
+        caplog.set_level(logging.WARNING, logger="src.core.ssot_job")
+
+        with patch("os.fsync") as mock_fsync:
+            mock_fsync.side_effect = OSError("I/O error")
+
+            atomic_write_json(file_path, data)
+
+        # warning 로그 확인
+        assert any("fsync failed" in record.message for record in caplog.records)
+        assert any("Data may not be durable" in record.message for record in caplog.records)
+
+    def test_fsync_failure_still_writes_file(self, tmp_path: Path):
+        """fsync 실패해도 파일은 정상적으로 작성됨."""
+        file_path = tmp_path / "test.json"
+        data = {"key": "value", "number": 42}
+
+        with patch("os.fsync") as mock_fsync:
+            mock_fsync.side_effect = OSError("I/O error")
+
+            atomic_write_json(file_path, data)
+
+        # 파일은 정상 작성됨
+        assert file_path.exists()
+        loaded = json.loads(file_path.read_text(encoding="utf-8"))
+        assert loaded == data
+
+    def test_fsync_failure_includes_path_in_log(self, tmp_path: Path, caplog):
+        """fsync 실패 시 로그에 파일 경로 포함 확인."""
+        import logging
+
+        file_path = tmp_path / "important.json"
+        data = {"key": "value"}
+
+        caplog.set_level(logging.WARNING, logger="src.core.ssot_job")
+
+        with patch("os.fsync") as mock_fsync:
+            mock_fsync.side_effect = OSError("Disk full")
+
+            atomic_write_json(file_path, data)
+
+        # 로그에 파일 경로 포함
+        warning_logs = [r.message for r in caplog.records if r.levelname == "WARNING"]
+        assert len(warning_logs) >= 1
+        assert str(file_path) in warning_logs[0]
+
+    def test_fsync_success_no_warning(self, tmp_path: Path, caplog):
+        """fsync 성공 시 warning 없음."""
+        import logging
+
+        file_path = tmp_path / "test.json"
+        data = {"key": "value"}
+
+        caplog.set_level(logging.WARNING, logger="src.core.ssot_job")
+
+        # fsync 정상 동작 (mock 없이)
+        atomic_write_json(file_path, data)
+
+        # fsync 관련 warning 없음
+        fsync_warnings = [r for r in caplog.records if "fsync" in r.message]
+        assert len(fsync_warnings) == 0
+
+
+# =============================================================================
+# 디렉토리 fsync 테스트
+# =============================================================================
+
+class TestDirectoryFsync:
+    """디렉토리 fsync 테스트."""
+
+    def test_dir_fsync_failure_logs_warning(self, tmp_path: Path, caplog):
+        """디렉토리 fsync 실패 시 warning 로그가 남는지 확인."""
+        import logging
+        from src.core.ssot_job import _fsync_dir
+
+        caplog.set_level(logging.WARNING, logger="src.core.ssot_job")
+
+        with patch("os.open") as mock_open:
+            mock_open.side_effect = OSError("Operation not permitted")
+
+            _fsync_dir(tmp_path)
+
+        # warning 로그 확인
+        assert any("Directory fsync failed" in record.message for record in caplog.records)
+
+    def test_dir_fsync_success_no_warning(self, tmp_path: Path, caplog):
+        """디렉토리 fsync 성공 시 warning 없음."""
+        import logging
+        from src.core.ssot_job import _fsync_dir
+
+        caplog.set_level(logging.WARNING, logger="src.core.ssot_job")
+
+        # 실제 디렉토리 fsync (Linux에서는 성공해야 함)
+        _fsync_dir(tmp_path)
+
+        # dir fsync 관련 warning 없음
+        dir_fsync_warnings = [r for r in caplog.records if "Directory fsync" in r.message]
+        assert len(dir_fsync_warnings) == 0
+
+    def test_atomic_write_calls_dir_fsync(self, tmp_path: Path):
+        """atomic_write_json이 디렉토리 fsync를 호출하는지 확인."""
+        from src.core import ssot_job
+
+        file_path = tmp_path / "test.json"
+        data = {"key": "value"}
+
+        dir_fsync_called = []
+        original_fsync_dir = ssot_job._fsync_dir
+
+        def tracking_fsync_dir(dir_path):
+            dir_fsync_called.append(dir_path)
+            return original_fsync_dir(dir_path)
+
+        ssot_job._fsync_dir = tracking_fsync_dir
+        try:
+            atomic_write_json(file_path, data)
+        finally:
+            ssot_job._fsync_dir = original_fsync_dir
+
+        # 디렉토리 fsync가 호출됨
+        assert len(dir_fsync_called) == 1
+        assert dir_fsync_called[0] == tmp_path
+
+
+# =============================================================================
+# Stale Lock 메타정보 테스트
+# =============================================================================
+
+class TestStaleLockMeta:
+    """Stale lock 메타정보 테스트."""
+
+    def test_lock_creates_meta_file(self, tmp_path: Path, test_config: dict):
+        """락 획득 시 메타 파일이 생성되는지 확인."""
+        from src.core.ssot_job import LOCK_META_FILENAME
+
+        job_dir = tmp_path / "job"
+        job_dir.mkdir()
+
+        with job_lock(job_dir, test_config) as lock_dir:
+            meta_path = lock_dir / LOCK_META_FILENAME
+            assert meta_path.exists()
+
+            # 메타 내용 확인
+            meta = json.loads(meta_path.read_text())
+            assert "pid" in meta
+            assert "hostname" in meta
+            assert "created_at" in meta
+            assert meta["pid"] == os.getpid()
+
+    def test_lock_removes_meta_file_on_release(self, tmp_path: Path, test_config: dict):
+        """락 해제 시 메타 파일이 삭제되는지 확인."""
+        from src.core.ssot_job import LOCK_META_FILENAME
+
+        job_dir = tmp_path / "job"
+        job_dir.mkdir()
+        lock_dir = job_dir / ".lock"
+
+        with job_lock(job_dir, test_config):
+            pass
+
+        # 락 해제 후 메타 파일과 디렉토리 모두 없어야 함
+        assert not lock_dir.exists()
+        assert not (lock_dir / LOCK_META_FILENAME).exists()
+
+    def test_stale_lock_detected_by_dead_pid(self, tmp_path: Path):
+        """죽은 PID의 락은 stale로 감지되는지 확인."""
+        from src.core.ssot_job import (
+            LOCK_META_FILENAME,
+            _get_current_hostname,
+            _is_stale_lock,
+        )
+
+        lock_dir = tmp_path / ".lock"
+        lock_dir.mkdir()
+
+        # 존재하지 않는 PID로 메타 작성
+        meta = {
+            "pid": 999999999,  # 존재하지 않을 가능성 높은 PID
+            "hostname": _get_current_hostname(),
+            "created_at": datetime.now(UTC).isoformat(),
+        }
+        (lock_dir / LOCK_META_FILENAME).write_text(json.dumps(meta))
+
+        # stale로 감지되어야 함 (PID가 죽었으므로)
+        assert _is_stale_lock(lock_dir) is True
+
+    def test_stale_lock_not_detected_for_alive_pid(self, tmp_path: Path):
+        """현재 프로세스 PID의 락은 stale이 아님."""
+        from src.core.ssot_job import (
+            LOCK_META_FILENAME,
+            _get_current_hostname,
+            _is_stale_lock,
+        )
+
+        lock_dir = tmp_path / ".lock"
+        lock_dir.mkdir()
+
+        # 현재 PID로 메타 작성
+        meta = {
+            "pid": os.getpid(),
+            "hostname": _get_current_hostname(),
+            "created_at": datetime.now(UTC).isoformat(),
+        }
+        (lock_dir / LOCK_META_FILENAME).write_text(json.dumps(meta))
+
+        # stale이 아니어야 함 (현재 프로세스가 살아있으므로)
+        assert _is_stale_lock(lock_dir) is False
+
+    def test_stale_lock_ttl_for_different_host(self, tmp_path: Path):
+        """다른 호스트의 락은 TTL 기반으로만 판단."""
+        from src.core.ssot_job import (
+            LOCK_META_FILENAME,
+            STALE_LOCK_THRESHOLD_SECONDS,
+            _is_stale_lock,
+        )
+
+        lock_dir = tmp_path / ".lock"
+        lock_dir.mkdir()
+
+        # 다른 호스트, 최근 시간
+        meta = {
+            "pid": 12345,
+            "hostname": "other-host-that-does-not-exist",
+            "created_at": datetime.now(UTC).isoformat(),
+        }
+        (lock_dir / LOCK_META_FILENAME).write_text(json.dumps(meta))
+
+        # 최근이므로 stale 아님
+        assert _is_stale_lock(lock_dir) is False
+
+        # 오래된 시간으로 변경
+        from datetime import timedelta
+        old_time = datetime.now(UTC) - timedelta(seconds=STALE_LOCK_THRESHOLD_SECONDS + 100)
+        meta["created_at"] = old_time.isoformat()
+        (lock_dir / LOCK_META_FILENAME).write_text(json.dumps(meta))
+
+        # TTL 초과로 stale
+        assert _is_stale_lock(lock_dir) is True
+
+    def test_cleanup_stale_lock_logs_owner_info(self, tmp_path: Path, caplog):
+        """stale lock 정리 시 소유자 정보가 로그에 포함되는지 확인."""
+        import logging
+        from datetime import timedelta
+        from src.core.ssot_job import (
+            LOCK_META_FILENAME,
+            STALE_LOCK_THRESHOLD_SECONDS,
+            _try_cleanup_stale_lock,
+        )
+
+        lock_dir = tmp_path / ".lock"
+        lock_dir.mkdir()
+
+        # 다른 호스트의 오래된 락 (TTL 초과)
+        old_time = datetime.now(UTC) - timedelta(seconds=STALE_LOCK_THRESHOLD_SECONDS + 100)
+        meta = {
+            "pid": 999999999,
+            "hostname": "test-host",
+            "created_at": old_time.isoformat(),
+        }
+        (lock_dir / LOCK_META_FILENAME).write_text(json.dumps(meta))
+
+        caplog.set_level(logging.WARNING, logger="src.core.ssot_job")
+
+        result = _try_cleanup_stale_lock(lock_dir)
+
+        assert result is True
+        assert not lock_dir.exists()
+
+        # 로그에 소유자 정보 포함
+        warning_logs = [r.message for r in caplog.records if r.levelname == "WARNING"]
+        assert len(warning_logs) >= 1
+        assert "pid=999999999" in warning_logs[0]
+        assert "host=test-host" in warning_logs[0]

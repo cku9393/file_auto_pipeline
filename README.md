@@ -1,6 +1,8 @@
-# Manufacturing Documentation Pipeline
+# File Auto Pipeline
 
 제조 현장의 검사 데이터를 수집하고, 정규화하여 고객용 보고서를 자동 생성하는 파이프라인입니다.
+
+> **프로젝트명**: `file-auto-pipeline` (pyproject.toml 기준)
 
 ## Why This Exists
 

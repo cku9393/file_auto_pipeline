@@ -1,0 +1,124 @@
+{
+  "sheets": [
+    "Report"
+  ],
+  "cells": {
+    "Report": {
+      "A1": "제조 검사 보고서",
+      "A3": "작업 지시 번호:",
+      "A4": "라인:",
+      "A5": "외경",
+      "B5": "15.0 ± 0.2",
+      "C5": "15.05",
+      "D5": "mm",
+      "E5": "PASS",
+      "A6": "내경",
+      "B6": "10.0 ± 0.1",
+      "C6": "10.02",
+      "D6": "mm",
+      "E6": "PASS",
+      "A7": "높이",
+      "B7": "25.0 ± 0.3",
+      "C7": "24.95",
+      "D7": "mm",
+      "E7": "PASS",
+      "A8": "무게",
+      "B8": "100 ± 5",
+      "C8": "98.5",
+      "D8": "g",
+      "E8": "PASS",
+      "A9": "검사 결과:",
+      "A10": "비고:",
+      "A12": "측정값",
+      "A13": "항목",
+      "B13": "측정값",
+      "C13": "단위"
+    }
+  },
+  "measurements": [
+    {
+      "item": "외경",
+      "spec": "15.0 ± 0.2",
+      "measured": "15.05",
+      "unit": "mm",
+      "result": "PASS"
+    },
+    {
+      "item": "내경",
+      "spec": "10.0 ± 0.1",
+      "measured": "10.02",
+      "unit": "mm",
+      "result": "PASS"
+    },
+    {
+      "item": "높이",
+      "spec": "25.0 ± 0.3",
+      "measured": "24.95",
+      "unit": "mm",
+      "result": "PASS"
+    },
+    {
+      "item": "무게",
+      "spec": "100 ± 5",
+      "measured": "98.5",
+      "unit": "g",
+      "result": "PASS"
+    },
+    {
+      "item": "검사 결과:",
+      "spec": null,
+      "measured": null,
+      "unit": null,
+      "result": null
+    },
+    {
+      "item": "비고:",
+      "spec": null,
+      "measured": null,
+      "unit": null,
+      "result": null
+    },
+    {
+      "item": "측정값",
+      "spec": null,
+      "measured": null,
+      "unit": null,
+      "result": null
+    },
+    {
+      "item": "항목",
+      "spec": "측정값",
+      "measured": "단위",
+      "unit": null,
+      "result": null
+    }
+  ],
+  "metadata": {
+    "sheet_count": 1,
+    "defined_names": [
+      "wo_no",
+      "line",
+      "part_no",
+      "lot",
+      "inspector",
+      "date",
+      "result",
+      "remark",
+      "meas_item_0",
+      "meas_value_0",
+      "meas_unit_0",
+      "meas_item_1",
+      "meas_value_1",
+      "meas_unit_1",
+      "meas_item_2",
+      "meas_value_2",
+      "meas_unit_2",
+      "meas_item_3",
+      "meas_value_3",
+      "meas_unit_3",
+      "meas_item_4",
+      "meas_value_4",
+      "meas_unit_4"
+    ]
+  }
+}

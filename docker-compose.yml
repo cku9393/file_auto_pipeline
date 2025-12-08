@@ -23,7 +23,7 @@ services:
       - ./logs:/app/logs
     environment:
       # AI API 키 (.env 파일에서 로드)
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - MY_ANTHROPIC_KEY=${MY_ANTHROPIC_KEY:-}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
       # 애플리케이션 설정
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
@@ -54,7 +54,7 @@ services:
       - ./templates:/app/templates
       - ./logs:/app/logs
     environment:
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - MY_ANTHROPIC_KEY=${MY_ANTHROPIC_KEY:-}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
       - TEMPLATES_DIR=/app/templates

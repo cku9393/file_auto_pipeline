@@ -9,8 +9,29 @@ AGENTS.md 규칙:
 
 from dataclasses import dataclass, field
 from decimal import Decimal
+from enum import Enum
 from pathlib import Path
 from typing import Any
+
+
+# =============================================================================
+# Override Reason Code (품질 검증용)
+# =============================================================================
+
+class OverrideReasonCode(str, Enum):
+    """
+    Override 사유 코드.
+
+    override가 "면책 버튼"이 되는 것을 방지하기 위해
+    구조화된 사유 코드를 강제합니다.
+    """
+    MISSING_PHOTO = "MISSING_PHOTO"           # 사진 누락
+    DATA_UNAVAILABLE = "DATA_UNAVAILABLE"     # 데이터 미제공
+    CUSTOMER_REQUEST = "CUSTOMER_REQUEST"     # 고객 요청
+    DEVICE_FAILURE = "DEVICE_FAILURE"         # 장비 고장
+    OCR_UNREADABLE = "OCR_UNREADABLE"         # OCR 인식 불가
+    FIELD_NOT_APPLICABLE = "FIELD_NOT_APPLICABLE"  # 해당 필드 미적용
+    OTHER = "OTHER"                           # 기타 (detail 필수)
 
 # =============================================================================
 # Core Schemas
@@ -85,7 +106,79 @@ class PhotoSlot:
     basename: str  # 01_overview, 02_label_serial, etc.
     required: bool
     override_allowed: bool
+    override_requires_reason: bool = True  # 사유 필수 여부
     path: Path | None = None  # 매칭된 파일 경로
+    description: str = ""  # 슬롯 설명
+    prefer_order: list[str] | None = None  # 파일명 내 우선순위 키워드
+    # 슬롯 매칭 검증용 OCR 키워드 (label_serial 등 핵심 슬롯용)
+    verify_keywords: list[str] | None = None
+
+
+class SlotMatchConfidence(str, Enum):
+    """
+    슬롯 매칭 신뢰도.
+
+    자동 매칭이 틀리면 조용히 잘못된 문서가 나오는 문제를 방지.
+    """
+    HIGH = "high"          # 정확한 basename 매칭 + (선택) OCR 키워드 확인됨
+    MEDIUM = "medium"      # basename 매칭만 됨, 핵심 슬롯은 경고 권장
+    LOW = "low"            # 부분 매칭, 사용자 확인 필요
+    AMBIGUOUS = "ambiguous"  # 여러 슬롯에 매칭 가능, fail-fast 또는 사용자 확인
+
+
+@dataclass
+class SlotMatchResult:
+    """
+    슬롯 매칭 결과.
+
+    자동 매칭 시 confidence와 함께 반환하여
+    모호한 매칭을 감지하고 사용자 확인을 유도.
+    """
+    slot: PhotoSlot | None
+    confidence: SlotMatchConfidence
+    matched_by: str = ""  # "basename_exact", "basename_prefix", "key_prefix"
+    warning: str | None = None  # 모호한 매칭 시 경고 메시지
+    alternative_slots: list[str] | None = None  # 다른 가능한 슬롯들
+    ocr_verified: bool = False  # OCR 키워드로 검증됨
+
+    @property
+    def is_reliable(self) -> bool:
+        """신뢰할 수 있는 매칭인지."""
+        return self.confidence in (SlotMatchConfidence.HIGH, SlotMatchConfidence.MEDIUM)
+
+    @property
+    def needs_user_confirmation(self) -> bool:
+        """사용자 확인이 필요한지."""
+        return self.confidence in (SlotMatchConfidence.LOW, SlotMatchConfidence.AMBIGUOUS)
+
+
+@dataclass
+class PhotoProcessingLog:
+    """
+    사진 처리 로그.
+
+    run log에 photo_processing 배열로 기록됨.
+    """
+    slot_id: str
+    action: str  # mapped, skipped, archived, override
+    raw_path: str | None = None  # 원본 파일 경로
+    derived_path: str | None = None  # derived 파일 경로
+    archived_path: str | None = None  # 아카이브된 경로 (_trash)
+    warning: str | None = None  # 중복 선택 등 경고
+    override_reason: str | None = None  # override 시 사유
+    timestamp: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "slot_id": self.slot_id,
+            "action": self.action,
+            "raw_path": self.raw_path,
+            "derived_path": self.derived_path,
+            "archived_path": self.archived_path,
+            "warning": self.warning,
+            "override_reason": self.override_reason,
+            "timestamp": self.timestamp,
+        }
 
 
 @dataclass
@@ -113,13 +206,17 @@ class OverrideLog:
     """
     Override 기록.
 
-    override 로그 필수 키: field_or_slot, reason, user, timestamp
+    override 로그 필수 키: field_or_slot, reason_code, reason_detail, user, timestamp
+
+    reason 필드는 호환성을 위해 "CODE: detail" 형태로 유지됩니다.
     """
     code: str  # OVERRIDE_APPLIED
     timestamp: str  # ISO 8601
     field_or_slot: str
     type: str  # field or photo
-    reason: str
+    reason_code: str  # OverrideReasonCode 값 (e.g., "MISSING_PHOTO")
+    reason_detail: str  # 상세 사유 (최소 10자)
+    reason: str  # 호환용: "CODE: detail" 형태
     user: str
 
     def to_dict(self) -> dict[str, Any]:
@@ -128,6 +225,8 @@ class OverrideLog:
             "timestamp": self.timestamp,
             "field_or_slot": self.field_or_slot,
             "type": self.type,
+            "reason_code": self.reason_code,
+            "reason_detail": self.reason_detail,
             "reason": self.reason,
             "user": self.user,
         }
@@ -182,6 +281,9 @@ class RunLog:
     warnings: list[WarningLog] = field(default_factory=list)
     overrides: list[OverrideLog] = field(default_factory=list)
 
+    # Photo processing (mapped, skipped, archived, override)
+    photo_processing: list["PhotoProcessingLog"] = field(default_factory=list)
+
     # Error (if failed)
     error_code: str | None = None
     error_context: dict[str, Any] | None = None
@@ -197,6 +299,7 @@ class RunLog:
             "packet_full_hash": self.packet_full_hash,
             "warnings": [w.to_dict() for w in self.warnings],
             "overrides": [o.to_dict() for o in self.overrides],
+            "photo_processing": [p.to_dict() for p in self.photo_processing],
             "error_code": self.error_code,
             "error_context": self.error_context,
         }
@@ -261,6 +364,15 @@ class UserCorrection:
 
 
 @dataclass
+class PhotoMapping:
+    """사진 슬롯 매핑 정보."""
+    slot_key: str
+    filename: str
+    raw_path: str
+    mapped_at: str  # ISO 8601
+
+
+@dataclass
 class IntakeSession:
     """
     Intake 세션 전체 (intake_session.json).
@@ -282,3 +394,4 @@ class IntakeSession:
     ocr_results: dict[str, Any] = field(default_factory=dict)  # OCRResult or providers.base.OCRResult
     extraction_result: Any = None  # ExtractionResult or providers.base.ExtractionResult
     user_corrections: list[UserCorrection] = field(default_factory=list)
+    photo_mappings: list[PhotoMapping] = field(default_factory=list)  # 사진 슬롯 매핑

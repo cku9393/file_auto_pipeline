@@ -1,0 +1,11 @@
+doc_type: report
+docx_placeholders: []
+template_id: report_test
+xlsx_mappings:
+  cell_addresses: {}
+  conflict_policy: fail
+  measurements:
+    columns: {}
+    sheet: Sheet1
+    start_row: 5
+  named_ranges: {}

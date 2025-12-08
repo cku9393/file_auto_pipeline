@@ -69,6 +69,10 @@ class ErrorCodes:
     RESULT_INVALID_VALUE = "RESULT_INVALID_VALUE"
     OVERRIDE_NOT_ALLOWED = "OVERRIDE_NOT_ALLOWED"
 
+    # === Override Reason 품질 검증 ===
+    INVALID_OVERRIDE_REASON = "INVALID_OVERRIDE_REASON"  # 금지 토큰, 최소 길이 미달
+    INVALID_OVERRIDE_CODE = "INVALID_OVERRIDE_CODE"      # 유효하지 않은 reason_code
+
     # === Render ===
     TEMPLATE_NOT_FOUND = "TEMPLATE_NOT_FOUND"
     RENDER_FAILED = "RENDER_FAILED"

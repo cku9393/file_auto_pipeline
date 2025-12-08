@@ -39,6 +39,11 @@ env/
 htmlcov/
 .tox/
 *.cover
+coverage.xml
+
+# E2E Artifacts (saved on test failure)
+tests/e2e/artifacts/
+!tests/e2e/artifacts/.gitkeep
 
 # Environment
 .env

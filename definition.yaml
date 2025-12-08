@@ -224,6 +224,34 @@ photos:
     - ".jpeg"
     - ".png"
 
+  # -----------------------------------------------------------------------------
+  # _trash 보관 정책 (Archive Retention Policy)
+  # -----------------------------------------------------------------------------
+  # 아카이브된 사진의 보관 및 정리 규칙입니다.
+  # purge 작업은 scripts/purge_trash.py로 수동 또는 cron으로 실행합니다.
+  # -----------------------------------------------------------------------------
+  trash_retention:
+    # 보관 기간 (일) - 이 기간이 지난 파일은 purge 대상
+    retention_days: 30
+
+    # job 단위 최대 용량 (MB) - 초과 시 오래된 것부터 purge
+    max_size_per_job_mb: 100
+
+    # 전체 _trash 최대 용량 (GB) - 초과 시 오래된 것부터 purge
+    max_total_size_gb: 10
+
+    # purge 동작 모드
+    # - delete: 완전 삭제
+    # - compress: tar.gz로 압축 후 archive_dir로 이동
+    # - external: 외부 스토리지로 이동 (archive_dir 필수)
+    purge_mode: compress
+
+    # 압축/이동 대상 디렉터리 (purge_mode가 compress/external일 때)
+    archive_dir: "_archive"
+
+    # 최소 보관 개수 (용량 초과해도 최소 N개는 유지)
+    min_keep_count: 3
+
   # 슬롯 정의
   slots:
     - key: overview
@@ -237,6 +265,14 @@ photos:
       required: true
       override_allowed: false    # 필수 사진, 절대 생략 불가
       description: "라벨/시리얼 번호 사진"
+      # OCR 검증 키워드: 라벨 사진에서 이 키워드가 발견되면 신뢰도 상승
+      verify_keywords:
+        - "S/N"
+        - "Serial"
+        - "시리얼"
+        - "Model"
+        - "모델"
+        - "LOT"
 
     - key: measurement_setup
       basename: "03_measurement_setup"

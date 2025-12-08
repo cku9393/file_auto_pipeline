@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "session_id": "62530034-f69b-4b3c-85ad-bf6566051f7d",
+  "created_at": "2025-12-08T06:54:41.113393+00:00",
+  "immutable": true,
+  "messages": [
+    {
+      "role": "user",
+      "content": "WO-001, L1, PASS",
+      "timestamp": "2025-12-08T06:54:41.129917+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "메시지를 받았습니다. 분석 중...",
+      "timestamp": "2025-12-08T06:54:41.145889+00:00",
+      "attachments": []
+    }
+  ],
+  "ocr_results": {},
+  "extraction_result": null,
+  "user_corrections": [],
+  "photo_mappings": []
+}

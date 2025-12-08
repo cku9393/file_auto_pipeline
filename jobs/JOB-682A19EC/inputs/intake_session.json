@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "session_id": "03e90c31-88ff-4f65-b5e9-8522fc56ce7d",
+  "created_at": "2025-12-08T06:50:37.058928+00:00",
+  "immutable": true,
+  "messages": [
+    {
+      "role": "user",
+      "content": "작업번호 WO-001입니다",
+      "timestamp": "2025-12-08T06:50:37.079837+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "메시지를 받았습니다. 분석 중...",
+      "timestamp": "2025-12-08T06:50:37.107862+00:00",
+      "attachments": []
+    }
+  ],
+  "ocr_results": {},
+  "extraction_result": null,
+  "user_corrections": [],
+  "photo_mappings": []
+}

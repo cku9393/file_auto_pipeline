@@ -1,0 +1,60 @@
+{
+  "paragraphs": [
+    "검사 보고서",
+    "1. 기본 정보",
+    "2. 검사 결과",
+    "검사 결과: PASS",
+    "검사자: 박검사",
+    "검사일: <DATE>",
+    "3. 사진 첨부",
+    "3.1 제품 전경",
+    "3.2 라벨/시리얼",
+    "4. 비고",
+    "사진 포함 테스트 시나리오",
+    "생성일시: <TS>"
+  ],
+  "tables": [
+    [
+      [
+        "작업지시번호",
+        "WO-2024-002"
+      ],
+      [
+        "라인",
+        "L2"
+      ],
+      [
+        "품번",
+        "PART-B200"
+      ],
+      [
+        "로트번호",
+        "LOT-20240116"
+      ]
+    ]
+  ],
+  "images": [
+    {
+      "rel_id": "rId9",
+      "count_position": 1,
+      "filename": "image1.jpg",
+      "inferred_slot": null,
+      "size_bytes": 8727,
+      "_image_summary": {
+        "total_count": 2,
+        "relationship_count": 2,
+        "media_file_count": 2
+      }
+    },
+    {
+      "rel_id": "rId10",
+      "count_position": 2,
+      "filename": "image2.jpg",
+      "inferred_slot": null,
+      "size_bytes": 8308
+    }
+  ],
+  "metadata": {
+    "author": "python-docx"
+  }
+}

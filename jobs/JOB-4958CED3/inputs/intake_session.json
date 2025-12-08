@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "session_id": "90c776dd-e69d-4e3c-a70b-53eaf1589f99",
+  "created_at": "2025-12-08T01:18:19.708309+00:00",
+  "immutable": true,
+  "messages": [
+    {
+      "role": "user",
+      "content": "[파일 첨부: test.jpg]",
+      "timestamp": "2025-12-08T01:18:19.710573+00:00",
+      "attachments": [
+        {
+          "filename": "test.jpg",
+          "size": 15,
+          "path": "inputs/uploads/test.jpg"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "OCR 처리 중 오류가 발생했습니다: [INTAKE_SESSION_CORRUPT] error='model_used is required for OCR result', filename='test.jpg'",
+      "timestamp": "2025-12-08T01:18:22.880553+00:00",
+      "attachments": []
+    }
+  ],
+  "ocr_results": {},
+  "extraction_result": null,
+  "user_corrections": []
+}

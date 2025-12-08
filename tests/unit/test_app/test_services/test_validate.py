@@ -317,7 +317,7 @@ class TestValidateOverride:
         assert "wo_no" in result.missing_required
 
     def test_override_allowed_with_reason(self, validation_service):
-        """override_allowed=True + 사유 → 통과."""
+        """override_allowed=True + 충분한 사유 → 통과."""
         fields = {
             "wo_no": "WO-001",
             # line 누락
@@ -328,17 +328,18 @@ class TestValidateOverride:
 
         result = validation_service.validate(
             fields,
-            overrides={"line": "사진에서 확인 불가"},
+            overrides={"line": "MISSING_PHOTO: 현장 사진에서 해당 정보 확인이 불가능합니다"},
             user="operator1",
         )
 
         assert result.valid is True
         assert len(result.applied_overrides) == 1
         assert result.applied_overrides[0].field_or_slot == "line"
-        assert result.applied_overrides[0].reason == "사진에서 확인 불가"
+        assert result.applied_overrides[0].reason_code == "MISSING_PHOTO"
+        assert "현장 사진에서 해당 정보 확인이 불가능합니다" in result.applied_overrides[0].reason_detail
 
     def test_override_requires_reason(self, validation_service):
-        """override_requires_reason=True + 빈 사유 → 실패."""
+        """override_requires_reason=True + 빈 사유 → 실패 (invalid_override_fields에 추가)."""
         fields = {
             "wo_no": "WO-001",
             # line 누락 (requires_reason=True)
@@ -353,7 +354,8 @@ class TestValidateOverride:
         )
 
         assert result.valid is False
-        assert "line" in result.missing_required
+        assert "line" in result.invalid_override_fields
+        assert "line" in result.invalid_override_reasons
 
     def test_override_without_reason_when_not_required(self, validation_service):
         """override_requires_reason=False → 사유 없어도 통과."""
@@ -395,7 +397,7 @@ class TestOverrideLogSchema:
     """Override 로그 스키마 테스트."""
 
     def test_override_log_has_required_keys(self, validation_service):
-        """override 로그 필수 키 확인."""
+        """override 로그 필수 키 확인 (신규 스키마)."""
         fields = {
             "wo_no": "WO-001",
             "part_no": "P1",
@@ -405,25 +407,29 @@ class TestOverrideLogSchema:
 
         result = validation_service.validate(
             fields,
-            overrides={"line": "사진에서 확인 불가"},
+            overrides={"line": "DATA_UNAVAILABLE: 고객이 해당 데이터를 제공하지 않았습니다"},
             user="operator1",
         )
 
         override = result.applied_overrides[0]
 
-        # 필수 키 확인
+        # 필수 키 확인 (신규 스키마)
         assert hasattr(override, "code")
         assert hasattr(override, "timestamp")
         assert hasattr(override, "field_or_slot")
         assert hasattr(override, "type")
-        assert hasattr(override, "reason")
+        assert hasattr(override, "reason_code")
+        assert hasattr(override, "reason_detail")
+        assert hasattr(override, "reason")  # 호환용
         assert hasattr(override, "user")
 
         # 값 확인
         assert override.code == "OVERRIDE_APPLIED"
         assert override.field_or_slot == "line"
         assert override.type == "field"
-        assert override.reason == "사진에서 확인 불가"
+        assert override.reason_code == "DATA_UNAVAILABLE"
+        assert override.reason_detail == "고객이 해당 데이터를 제공하지 않았습니다"
+        assert override.reason == "DATA_UNAVAILABLE: 고객이 해당 데이터를 제공하지 않았습니다"
         assert override.user == "operator1"
 
     def test_override_log_has_timestamp(self, validation_service):
@@ -437,7 +443,7 @@ class TestOverrideLogSchema:
 
         result = validation_service.validate(
             fields,
-            overrides={"line": "사유"},
+            overrides={"line": "현장 장비 문제로 인해 해당 정보를 확인할 수 없었습니다"},
         )
 
         override = result.applied_overrides[0]
@@ -544,3 +550,226 @@ class TestValidationResult:
         assert result.warnings == []
         assert result.overridable == []
         assert result.applied_overrides == []
+        # 신규 필드
+        assert result.invalid_override_fields == []
+        assert result.invalid_override_reasons == {}
+
+
+# =============================================================================
+# Override Reason 품질 검증 테스트 (TC1-TC4)
+# =============================================================================
+
+class TestOverrideReasonQuality:
+    """
+    Override 사유 품질 검증 테스트.
+
+    면책 버튼 방지를 위한 테스트:
+    - TC1: 금지 토큰 거절
+    - TC2: 최소 길이 거절
+    - TC3: 정상 통과 (신규 구조)
+    - TC4: 레거시 문자열 파싱
+    """
+
+    def test_override_rejects_forbidden_tokens(self, validation_service):
+        """TC1: 금지 토큰 거절 - 'ok', 'N/A', '-' 등은 실패."""
+        fields = {
+            "wo_no": "WO-001",
+            "part_no": "P1",
+            "lot": "LOT1",
+            "result": "PASS",
+            # line 누락
+        }
+
+        # 각 금지 토큰 테스트
+        forbidden_reasons = ["ok", "OK", "N/A", "n/a", "-", "pass", "skip", "none"]
+
+        for reason in forbidden_reasons:
+            result = validation_service.validate(
+                fields,
+                overrides={"line": reason},
+            )
+
+            assert result.valid is False, f"'{reason}'이 통과하면 안됨"
+            assert "line" in result.invalid_override_fields, f"'{reason}' 거절 실패"
+            assert "금지 토큰" in result.invalid_override_reasons.get("line", ""), (
+                f"'{reason}' 에러 메시지 확인"
+            )
+
+    def test_override_rejects_short_reason(self, validation_service):
+        """TC2: 최소 길이 거절 - 10자 미만은 실패."""
+        fields = {
+            "wo_no": "WO-001",
+            "part_no": "P1",
+            "lot": "LOT1",
+            "result": "PASS",
+        }
+
+        # 10자 미만 사유
+        short_reasons = ["짧은사유", "short", "abc", "12345678"]  # 각각 10자 미만
+
+        for reason in short_reasons:
+            result = validation_service.validate(
+                fields,
+                overrides={"line": reason},
+            )
+
+            assert result.valid is False, f"짧은 사유 '{reason}'가 통과하면 안됨"
+            assert "line" in result.invalid_override_fields
+            assert "최소 길이" in result.invalid_override_reasons.get("line", "")
+
+    def test_override_accepts_valid_new_format(self, validation_service):
+        """TC3: 정상 통과 (신규 dict 구조)."""
+        fields = {
+            "wo_no": "WO-001",
+            "part_no": "P1",
+            "lot": "LOT1",
+            "result": "PASS",
+        }
+
+        # 신규 구조: {"code": ..., "detail": ...}
+        override_reason = {
+            "code": "DATA_UNAVAILABLE",
+            "detail": "고객이 해당 데이터를 제공하지 않았음",
+        }
+
+        result = validation_service.validate(
+            fields,
+            overrides={"line": override_reason},
+            user="operator1",
+        )
+
+        assert result.valid is True
+        assert len(result.applied_overrides) == 1
+
+        override = result.applied_overrides[0]
+        assert override.reason_code == "DATA_UNAVAILABLE"
+        assert override.reason_detail == "고객이 해당 데이터를 제공하지 않았음"
+        assert override.reason == "DATA_UNAVAILABLE: 고객이 해당 데이터를 제공하지 않았음"
+
+    def test_override_parses_legacy_format(self, validation_service):
+        """TC4: 레거시 문자열 파싱."""
+        fields = {
+            "wo_no": "WO-001",
+            "part_no": "P1",
+            "lot": "LOT1",
+            "result": "PASS",
+        }
+
+        # 케이스 1: "CODE: detail" 형식
+        result1 = validation_service.validate(
+            fields,
+            overrides={"line": "MISSING_PHOTO: 현장 촬영 누락으로 대체 자료 사용"},
+        )
+
+        assert result1.valid is True
+        override1 = result1.applied_overrides[0]
+        assert override1.reason_code == "MISSING_PHOTO"
+        assert override1.reason_detail == "현장 촬영 누락으로 대체 자료 사용"
+
+        # 케이스 2: "CODE|detail" 형식
+        result2 = validation_service.validate(
+            fields,
+            overrides={"line": "DEVICE_FAILURE|장비 고장으로 인해 측정값을 확인할 수 없습니다"},
+        )
+
+        assert result2.valid is True
+        override2 = result2.applied_overrides[0]
+        assert override2.reason_code == "DEVICE_FAILURE"
+        assert override2.reason_detail == "장비 고장으로 인해 측정값을 확인할 수 없습니다"
+
+        # 케이스 3: prefix 없음 → code=OTHER
+        result3 = validation_service.validate(
+            fields,
+            overrides={"line": "현장 사정으로 인해 해당 값을 확인할 수 없었습니다"},
+        )
+
+        assert result3.valid is True
+        override3 = result3.applied_overrides[0]
+        assert override3.reason_code == "OTHER"
+        assert override3.reason_detail == "현장 사정으로 인해 해당 값을 확인할 수 없었습니다"
+
+
+class TestOverrideReasonParsing:
+    """Override 사유 파싱 함수 단위 테스트."""
+
+    def test_parse_dict_format(self):
+        """dict 형식 파싱."""
+        from src.app.services.validate import parse_override_reason
+        from src.domain.schemas import OverrideReasonCode
+
+        result = parse_override_reason({
+            "code": "CUSTOMER_REQUEST",
+            "detail": "고객 요청에 따른 필드 생략",
+        })
+
+        assert result.code == OverrideReasonCode.CUSTOMER_REQUEST
+        assert result.detail == "고객 요청에 따른 필드 생략"
+
+    def test_parse_colon_format(self):
+        """콜론 구분 문자열 파싱."""
+        from src.app.services.validate import parse_override_reason
+        from src.domain.schemas import OverrideReasonCode
+
+        result = parse_override_reason("OCR_UNREADABLE: OCR 인식 불가능한 이미지")
+
+        assert result.code == OverrideReasonCode.OCR_UNREADABLE
+        assert result.detail == "OCR 인식 불가능한 이미지"
+
+    def test_parse_pipe_format(self):
+        """파이프 구분 문자열 파싱."""
+        from src.app.services.validate import parse_override_reason
+        from src.domain.schemas import OverrideReasonCode
+
+        result = parse_override_reason("FIELD_NOT_APPLICABLE|해당 제품에는 적용되지 않는 필드")
+
+        assert result.code == OverrideReasonCode.FIELD_NOT_APPLICABLE
+        assert result.detail == "해당 제품에는 적용되지 않는 필드"
+
+    def test_parse_no_prefix_defaults_to_other(self):
+        """prefix 없으면 OTHER로 기본값."""
+        from src.app.services.validate import parse_override_reason
+        from src.domain.schemas import OverrideReasonCode
+
+        result = parse_override_reason("단순히 사유만 작성한 경우입니다")
+
+        assert result.code == OverrideReasonCode.OTHER
+        assert result.detail == "단순히 사유만 작성한 경우입니다"
+
+    def test_parse_unknown_code_becomes_other(self):
+        """알 수 없는 코드는 OTHER로 처리."""
+        from src.app.services.validate import parse_override_reason
+        from src.domain.schemas import OverrideReasonCode
+
+        result = parse_override_reason("UNKNOWN_CODE: 알 수 없는 코드와 상세 사유")
+
+        assert result.code == OverrideReasonCode.OTHER
+        assert "UNKNOWN_CODE" in result.detail  # 전체가 detail로
+
+
+class TestForbiddenTokenDetection:
+    """금지 토큰 검출 테스트."""
+
+    def test_detects_common_forbidden_tokens(self):
+        """일반 금지 토큰 검출."""
+        from src.app.services.validate import is_forbidden_reason
+
+        forbidden = ["ok", "OK", "n/a", "N/A", "none", "-", "pass", "skip", "test"]
+
+        for token in forbidden:
+            is_bad, detected = is_forbidden_reason(token)
+            assert is_bad is True, f"'{token}'이 금지 토큰으로 검출되어야 함"
+
+    def test_allows_legitimate_reasons(self):
+        """정상 사유는 허용."""
+        from src.app.services.validate import is_forbidden_reason
+
+        legitimate = [
+            "고객 요청에 따라 해당 필드를 생략합니다",
+            "현장 사진에서 확인이 불가능했습니다",
+            "장비 고장으로 측정할 수 없었습니다",
+            "OCR 인식이 실패하여 수동 입력",
+        ]
+
+        for reason in legitimate:
+            is_bad, _ = is_forbidden_reason(reason)
+            assert is_bad is False, f"정상 사유 '{reason}'가 금지 토큰으로 인식됨"

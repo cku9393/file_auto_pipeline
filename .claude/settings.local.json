@@ -1,3 +1,27 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest:*)",
+      "Bash(python3 -m pytest:*)",
+      "Bash(source .venv/bin/activate)",
+      "Bash(mkdir:*)",
+      "Bash(python3:*)",
+      "Bash(pip install:*)",
+      "Bash(.venv/bin/pip:*)",
+      "Bash(.venv/bin/python:*)",
+      "Bash(python -m pip install:*)",
+      "Bash(python -c:*)",
+      "Bash(python -m src.testing.golden.generate_expected:*)",
+      "Bash(unzip:*)",
+      "Bash(CI=true python:*)",
+      "Bash(file:*)",
+      "Bash(uv pip install:*)",
+      "Bash(grep:*)",
+      "Bash(uv run python:*)",
+      "Bash(uv run pytest:*)",
+      "Bash(find:*)",
+      "Bash(uv add:*)"
+    ]
+  },
   "outputStyle": "Explanatory"
 }

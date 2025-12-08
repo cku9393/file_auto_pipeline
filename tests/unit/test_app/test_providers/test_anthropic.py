@@ -4,6 +4,11 @@ test_anthropic.py - Claude Provider 테스트
 ADR-0003:
 - LLM은 구조화 제안만, 최종 판정은 core/validate
 - model_requested + model_used 필수 기록
+
+Mock 주의사항:
+- MagicMock은 접근되지 않은 속성에 자동으로 새 MagicMock을 반환
+- response.model, response.id 등 실제 API 응답 속성을 명시적으로 설정해야 함
+- make_anthropic_response() factory 사용 권장
 """
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -12,6 +17,38 @@ import pytest
 
 from src.app.providers.anthropic import ClaudeProvider
 from src.app.providers.base import ExtractionError
+
+
+# =============================================================================
+# Mock Factories
+# =============================================================================
+
+
+def make_anthropic_response(
+    text: str,
+    model: str = "claude-opus-4-5-20251101",
+    request_id: str = "msg_test_default",
+) -> MagicMock:
+    """
+    Anthropic API 응답 mock 생성.
+
+    MagicMock의 자동 속성 생성으로 인한 버그 방지.
+    모든 테스트에서 이 factory를 사용하면 동일한 실수를 반복하지 않음.
+
+    Args:
+        text: API 응답 텍스트 (JSON 문자열)
+        model: 사용된 모델 이름
+        request_id: API 요청 ID
+
+    Returns:
+        Anthropic Message 응답을 모방한 MagicMock
+    """
+    response = MagicMock()
+    response.content = [MagicMock()]
+    response.content[0].text = text
+    response.model = model  # 명시적 설정 필수!
+    response.id = request_id  # 명시적 설정 필수!
+    return response
 
 
 # =============================================================================
@@ -95,7 +132,7 @@ class TestClaudeProviderInit:
 
     def test_init_uses_env_api_key(self, monkeypatch):
         """환경변수에서 API 키 로드."""
-        monkeypatch.setenv("ANTHROPIC_API_KEY", "env-api-key")
+        monkeypatch.setenv("MY_ANTHROPIC_KEY", "env-api-key")
 
         provider = ClaudeProvider()
 
@@ -285,15 +322,18 @@ class TestExtractFields:
         sample_prompt_template,
     ):
         """성공적인 추출."""
-        mock_response = MagicMock()
-        mock_response.content = [MagicMock()]
-        mock_response.content[0].text = """{
+        # factory 사용으로 mock 설정 실수 방지
+        mock_response = make_anthropic_response(
+            text="""{
   "fields": {"wo_no": "WO-001", "line": "L1"},
   "measurements": [],
   "missing_fields": [],
   "warnings": [],
   "confidence": 0.95
-}"""
+}""",
+            model="claude-opus-4-5-20251101",
+            request_id="msg_test_123",
+        )
 
         mock_client = AsyncMock()
         mock_client.messages.create = AsyncMock(return_value=mock_response)
@@ -321,9 +361,12 @@ class TestExtractFields:
         """ADR-0003: model_requested + model_used 기록."""
         provider = ClaudeProvider(model="claude-sonnet-4-20250514")
 
-        mock_response = MagicMock()
-        mock_response.content = [MagicMock()]
-        mock_response.content[0].text = '{"fields": {}}'
+        # factory 사용으로 mock 설정 실수 방지
+        mock_response = make_anthropic_response(
+            text='{"fields": {}}',
+            model="claude-sonnet-4-20250514",
+            request_id="msg_test_456",
+        )
 
         mock_client = AsyncMock()
         mock_client.messages.create = AsyncMock(return_value=mock_response)

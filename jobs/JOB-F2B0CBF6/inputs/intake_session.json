@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "session_id": "9c7a8826-cf54-4602-af15-f4a957b3da26",
+  "created_at": "2025-12-08T06:51:57.133967+00:00",
+  "immutable": true,
+  "messages": [
+    {
+      "role": "assistant",
+      "content": "📷 사진이 저장되었습니다. (슬롯 미매칭: test.jpg)",
+      "timestamp": "2025-12-08T06:51:57.174180+00:00",
+      "attachments": []
+    },
+    {
+      "role": "user",
+      "content": "[사진 첨부: test.jpg]",
+      "timestamp": "2025-12-08T06:51:57.202397+00:00",
+      "attachments": [
+        {
+          "filename": "test.jpg",
+          "size": 15,
+          "path": "inputs/uploads/test.jpg"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "OCR 처리 중 오류가 발생했습니다: [INTAKE_SESSION_CORRUPT] error='model_used is required for OCR result', filename='test.jpg'",
+      "timestamp": "2025-12-08T06:51:59.495439+00:00",
+      "attachments": []
+    }
+  ],
+  "ocr_results": {},
+  "extraction_result": null,
+  "user_corrections": [],
+  "photo_mappings": []
+}

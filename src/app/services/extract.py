@@ -6,7 +6,9 @@ ADR-0003:
 - 간단한 패턴은 정규식으로 먼저 시도 (비용 절감)
 """
 
+import hashlib
 import re
+from datetime import UTC, datetime
 from pathlib import Path
 
 import yaml
@@ -21,6 +23,9 @@ class ExtractionService:
 
     자연어 입력을 구조화된 JSON으로 변환.
     """
+
+    # 정규식 규칙 버전 (패턴 변경 시 업데이트)
+    REGEX_RULESET_VERSION = "1.0.0"
 
     def __init__(
         self,
@@ -41,6 +46,7 @@ class ExtractionService:
         self.prompts_dir = prompts_dir
         self._definition: dict | None = None
         self._prompt_template: str | None = None
+        self._regex_ruleset_hash: str | None = None  # lazy 계산
 
         if provider is not None:
             self.provider = provider
@@ -98,14 +104,27 @@ class ExtractionService:
                 fields=regex_fields,
                 model_requested="regex",
                 model_used="regex",
+                extracted_at=datetime.now(UTC).isoformat(),
+                # 정규식 추출 메타데이터
+                provider="regex",
+                extraction_method="regex",
+                regex_version=f"{self.REGEX_RULESET_VERSION}:{self._get_regex_ruleset_hash()}",
+                # 정규식 추출은 LLM이 아니므로 raw output/prompt 없음
+                llm_raw_output=None,
+                prompt_used=None,
             )
 
         # LLM 호출
+        # template_id: 사용된 프롬프트 템플릿 경로 (보안: 템플릿과 유저 입력 분리)
+        prompt_path = self.prompts_dir / "extract_fields.txt"
+        template_id = str(prompt_path) if prompt_path.exists() else "default"
+
         result = await self.provider.extract_fields(
             user_input=user_input,
             ocr_text=ocr_text,
             definition=self.definition,
             prompt_template=self.prompt_template,
+            template_id=template_id,
         )
 
         # 정규식 결과와 병합 (정규식 우선 - 더 신뢰할 수 있음)
@@ -165,6 +184,23 @@ class ExtractionService:
             for name, config in self.definition.get("fields", {}).items()
             if config.get("importance") == "critical"
         ]
+
+    def _get_regex_ruleset_hash(self) -> str:
+        """
+        정규식 규칙셋 해시 계산.
+
+        definition.yaml의 fields (aliases 포함)를 기반으로 해시 생성.
+        패턴이 변경되면 해시도 변경됨 → 재현성 추적 가능.
+        """
+        if self._regex_ruleset_hash is None:
+            # definition의 fields 섹션을 정렬된 문자열로 변환
+            fields = self.definition.get("fields", {})
+            sorted_fields = sorted(fields.items())
+            ruleset_str = str(sorted_fields)
+            self._regex_ruleset_hash = hashlib.sha256(
+                ruleset_str.encode()
+            ).hexdigest()[:12]
+        return self._regex_ruleset_hash
 
     def _default_prompt(self) -> str:
         """기본 프롬프트 템플릿."""

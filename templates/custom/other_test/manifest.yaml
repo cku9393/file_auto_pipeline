@@ -1,0 +1,11 @@
+doc_type: other
+docx_placeholders: []
+template_id: other_test
+xlsx_mappings:
+  cell_addresses: {}
+  conflict_policy: fail
+  measurements:
+    columns: {}
+    sheet: Sheet1
+    start_row: 5
+  named_ranges: {}

@@ -78,7 +78,8 @@ def emit_override(
     run_log: RunLog,
     field_or_slot: str,
     override_type: str,
-    reason: str,
+    reason_code: str,
+    reason_detail: str,
     user: str,
 ) -> None:
     """
@@ -88,16 +89,22 @@ def emit_override(
         run_log: RunLog 인스턴스
         field_or_slot: 필드 또는 슬롯 이름
         override_type: "field" 또는 "photo"
-        reason: Override 사유
+        reason_code: Override 사유 코드 (OverrideReasonCode 값)
+        reason_detail: Override 상세 사유
         user: 사용자 ID/이름
     """
     now = datetime.now(UTC).isoformat()
+
+    # 호환용 reason 필드 생성
+    reason = f"{reason_code}: {reason_detail}"
 
     override = OverrideLog(
         code="OVERRIDE_APPLIED",
         timestamp=now,
         field_or_slot=field_or_slot,
         type=override_type,
+        reason_code=reason_code,
+        reason_detail=reason_detail,
         reason=reason,
         user=user,
     )

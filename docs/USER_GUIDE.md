@@ -76,7 +76,7 @@ cp .env.example .env
 
 ```env
 # Anthropic Claude API
-ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxx
+MY_ANTHROPIC_KEY=sk-ant-xxxxxxxxxxxxx
 
 # Google Gemini API
 GOOGLE_API_KEY=AIzaSyxxxxxxxxxxxxxx
@@ -362,7 +362,7 @@ OCR 신뢰도가 0.8 미만이면 경고 메시지가 표시됩니다.
 ### Q2. 필드 추출이 실패해요
 
 **A:** 다음을 확인하세요:
-1. **API 키**: `.env` 파일에 ANTHROPIC_API_KEY가 올바르게 설정되었는지
+1. **API 키**: `.env` 파일에 MY_ANTHROPIC_KEY가 올바르게 설정되었는지
 2. **입력 형식**: 필드명과 별칭을 definition.yaml에서 확인
 3. **필수 필드**: wo_no, line, part_no, lot, result는 반드시 포함
 
@@ -428,17 +428,17 @@ pkill -f "uvicorn src.app.main:app"
 uv run uvicorn src.app.main:app --port 8001
 ```
 
-#### 2. "ANTHROPIC_API_KEY not found" 에러
+#### 2. "MY_ANTHROPIC_KEY not found" 에러
 
 **문제:** API 키가 설정되지 않았습니다.
 
 **해결:**
 ```bash
 # .env 파일 확인
-cat .env | grep ANTHROPIC_API_KEY
+cat .env | grep MY_ANTHROPIC_KEY
 
 # 없으면 추가
-echo "ANTHROPIC_API_KEY=sk-ant-your-key-here" >> .env
+echo "MY_ANTHROPIC_KEY=sk-ant-your-key-here" >> .env
 ```
 
 #### 3. "Template not found" 에러

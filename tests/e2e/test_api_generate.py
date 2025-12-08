@@ -11,6 +11,7 @@ test_api_generate.py - Generate API E2E 테스트
 - GET /generate/jobs/{job_id} (HTML page)
 """
 
+import json
 from pathlib import Path
 from unittest.mock import patch
 
@@ -43,6 +44,75 @@ def sample_job_dir(tmp_path: Path) -> Path:
     (deliverables / "measurements.xlsx").write_bytes(b"fake xlsx content")
 
     return job_dir
+
+
+@pytest.fixture
+def mock_session_with_extraction(tmp_path: Path, client):
+    """
+    세션과 extraction_result가 설정된 테스트 환경.
+
+    generate.py의 통합 플로우 테스트를 위해:
+    - 세션 매핑 등록
+    - intake_session.json 생성 (extraction_result 포함)
+    - jobs_root 패치
+    """
+    from src.app.routes.chat import _session_to_job
+
+    session_id = "test-session"
+    job_id = "JOB-TEST-GEN"
+
+    # Job 디렉터리 구조 생성
+    job_dir = tmp_path / job_id
+    inputs_dir = job_dir / "inputs"
+    inputs_dir.mkdir(parents=True)
+
+    # intake_session.json with extraction_result
+    session_data = {
+        "schema_version": "1.0",
+        "session_id": session_id,
+        "created_at": "2024-01-01T00:00:00+00:00",
+        "immutable": True,
+        "messages": [],
+        "ocr_results": {},
+        "extraction_result": {
+            "fields": {
+                "wo_no": "WO-2024-001",
+                "line": "LINE-A",
+                "part_no": "PART-001",
+                "lot": "LOT-001",
+                "result": "PASS",
+                "inspector": "테스트",
+                "date": "2024-01-01",
+                "remark": "테스트 비고",
+            },
+            "measurements": [
+                {"item": "1", "spec": "10.0", "measured": "10.1", "unit": "mm", "result": "PASS"},
+            ],
+            "missing_fields": [],
+            "warnings": [],
+        },
+        "user_corrections": [],
+    }
+    (inputs_dir / "intake_session.json").write_text(
+        json.dumps(session_data, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    # 세션 매핑 등록
+    _session_to_job[session_id] = job_id
+
+    # jobs_root 패치 적용
+    with patch.object(client.app.state, "jobs_root", tmp_path):
+        yield {
+            "session_id": session_id,
+            "job_id": job_id,
+            "job_dir": job_dir,
+            "tmp_path": tmp_path,
+        }
+
+    # cleanup: 세션 매핑 제거
+    if session_id in _session_to_job:
+        del _session_to_job[session_id]
 
 
 # =============================================================================
@@ -95,12 +165,14 @@ class TestJobDetailPage:
 class TestGenerateDocument:
     """문서 생성 요청 테스트."""
 
-    def test_generate_document_success(self, client):
-        """POST /api/generate → 문서 생성."""
+    def test_generate_document_success(self, client, mock_session_with_extraction):
+        """POST /api/generate → 문서 생성 + SSOT + RunLog + Hashing 검증."""
+        ctx = mock_session_with_extraction
+
         response = client.post(
             "/api/generate",
             data={
-                "session_id": "test-session",
+                "session_id": ctx["session_id"],
                 "template_id": "base",
                 "output_format": "both",
             },
@@ -109,17 +181,50 @@ class TestGenerateDocument:
         assert response.status_code == 200
         data = response.json()
 
+        # 기본 응답 검증
         assert data["success"] is True
         assert "job_id" in data
         assert "files" in data
         assert "download_url" in data
 
-    def test_generate_document_docx_only(self, client):
+        # 새로 추가된 필드 검증 (SSOT + Hashing 통합)
+        assert "run_id" in data
+        assert "packet_hash" in data
+        assert "packet_full_hash" in data
+        assert len(data["packet_hash"]) == 64  # SHA-256 hex
+        assert len(data["packet_full_hash"]) == 64
+
+        # job.json 생성 확인 (SSOT)
+        job_json_path = ctx["job_dir"] / "job.json"
+        assert job_json_path.exists()
+
+        import json
+        job_data = json.loads(job_json_path.read_text(encoding="utf-8"))
+        assert job_data["job_id"] == ctx["job_id"]
+        assert job_data["wo_no"] == "WO-2024-001"
+        assert job_data["line"] == "LINE-A"
+
+        # run log 생성 확인
+        logs_dir = ctx["job_dir"] / "logs"
+        assert logs_dir.exists()
+        run_logs = list(logs_dir.glob("run_*.json"))
+        assert len(run_logs) >= 1
+
+        # run log 내용 검증
+        run_log_data = json.loads(run_logs[0].read_text(encoding="utf-8"))
+        assert run_log_data["job_id"] == ctx["job_id"]
+        assert run_log_data["result"] == "success"
+        assert run_log_data["packet_hash"] == data["packet_hash"]
+        assert run_log_data["packet_full_hash"] == data["packet_full_hash"]
+
+    def test_generate_document_docx_only(self, client, mock_session_with_extraction):
         """DOCX만 생성."""
+        ctx = mock_session_with_extraction
+
         response = client.post(
             "/api/generate",
             data={
-                "session_id": "test-session",
+                "session_id": ctx["session_id"],
                 "template_id": "base",
                 "output_format": "docx",
             },
@@ -128,13 +233,17 @@ class TestGenerateDocument:
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
+        assert len(data["files"]) == 1
+        assert data["files"][0]["name"] == "report.docx"
 
-    def test_generate_document_xlsx_only(self, client):
+    def test_generate_document_xlsx_only(self, client, mock_session_with_extraction):
         """XLSX만 생성."""
+        ctx = mock_session_with_extraction
+
         response = client.post(
             "/api/generate",
             data={
-                "session_id": "test-session",
+                "session_id": ctx["session_id"],
                 "template_id": "base",
                 "output_format": "xlsx",
             },
@@ -143,21 +252,49 @@ class TestGenerateDocument:
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
+        assert len(data["files"]) == 1
+        assert data["files"][0]["name"] == "measurements.xlsx"
 
-    def test_generate_document_with_custom_template(self, client):
-        """커스텀 템플릿 사용."""
+    def test_generate_session_not_found(self, client):
+        """세션 없으면 404."""
         response = client.post(
             "/api/generate",
             data={
-                "session_id": "test-session",
-                "template_id": "customer_a",
+                "session_id": "nonexistent-session",
+                "template_id": "base",
                 "output_format": "both",
             },
         )
 
-        assert response.status_code == 200
-        data = response.json()
-        assert data["success"] is True
+        assert response.status_code == 404
+        assert "Session not found" in response.json()["detail"]
+
+    def test_generate_run_log_on_failure(self, client, mock_session_with_extraction):
+        """실패 시에도 run log가 생성됨."""
+        ctx = mock_session_with_extraction
+
+        # 존재하지 않는 템플릿으로 요청
+        response = client.post(
+            "/api/generate",
+            data={
+                "session_id": ctx["session_id"],
+                "template_id": "nonexistent_template",
+                "output_format": "both",
+            },
+        )
+
+        assert response.status_code == 404
+
+        # run log는 실패해도 생성되어야 함
+        logs_dir = ctx["job_dir"] / "logs"
+        assert logs_dir.exists()
+        run_logs = list(logs_dir.glob("run_*.json"))
+        assert len(run_logs) >= 1
+
+        import json
+        run_log_data = json.loads(run_logs[0].read_text(encoding="utf-8"))
+        assert run_log_data["result"] == "failed"
+        assert run_log_data["error_code"] is not None
 
 
 # =============================================================================

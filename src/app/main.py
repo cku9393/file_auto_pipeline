@@ -2,8 +2,8 @@
 FastAPI 애플리케이션 진입점.
 
 실행:
-- 개발: pixi run serve-dev (uvicorn --reload)
-- 프로덕션: pixi run serve
+- 개발: uv run uvicorn src.app.main:app --reload
+- 프로덕션: uv run uvicorn src.app.main:app
 """
 
 from collections.abc import AsyncGenerator
@@ -17,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 # Routes
-from src.app.routes import chat, generate, templates
+from src.app.routes import chat, generate, jobs, templates
 
 # =============================================================================
 # Configuration
@@ -90,11 +90,13 @@ jinja_templates = Jinja2Templates(directory=templates_dir) if templates_dir.exis
 app.include_router(chat.router, prefix="", tags=["Chat"])
 app.include_router(templates.router, prefix="/templates", tags=["Templates"])
 app.include_router(generate.router, prefix="/generate", tags=["Generate"])
+app.include_router(jobs.router, prefix="/jobs", tags=["Jobs"])
 
 # API 라우트
 app.include_router(chat.api_router, prefix="/api/chat", tags=["Chat API"])
 app.include_router(templates.api_router, prefix="/api/templates", tags=["Templates API"])
 app.include_router(generate.api_router, prefix="/api/generate", tags=["Generate API"])
+app.include_router(jobs.api_router, prefix="/api/jobs", tags=["Jobs API"])
 
 
 # =============================================================================

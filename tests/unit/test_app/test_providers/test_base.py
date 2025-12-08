@@ -218,14 +218,15 @@ class TestExtractionResult:
         assert d["extracted_at"] == "2024-01-15T10:00:00Z"
 
     def test_to_dict_includes_all_keys(self):
-        """to_dict()에 모든 키 포함."""
+        """to_dict()에 모든 키 포함 (None 값은 제외됨)."""
         result = ExtractionResult()
         d = result.to_dict()
 
+        # ExtractionResult.to_dict()는 None 값을 제거함 (용량 절약)
+        # 기본값이 있는 필드만 포함
         expected_keys = {
             "success", "fields", "measurements", "missing_fields",
-            "warnings", "confidence", "suggested_template_id",
-            "model_requested", "model_used", "extracted_at", "error_message",
+            "warnings", "llm_raw_truncated",  # 기본값 False
         }
         assert set(d.keys()) == expected_keys
 

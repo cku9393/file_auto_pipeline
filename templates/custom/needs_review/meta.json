@@ -1,0 +1,15 @@
+{
+  "template_id": "needs_review",
+  "doc_type": "inspection",
+  "display_name": "리뷰 필요",
+  "description": "",
+  "status": "draft",
+  "version": "1.0",
+  "created_at": "2025-12-08T06:50:47.802702+00:00",
+  "created_by": "web_user",
+  "updated_at": "2025-12-08T06:50:47.802702+00:00",
+  "derived_from": null,
+  "creation_level": "manual",
+  "reviewed_by": null,
+  "reviewed_at": null
+}

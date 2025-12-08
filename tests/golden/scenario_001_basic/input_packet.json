@@ -1,0 +1,33 @@
+{
+  "wo_no": "WO-2024-001",
+  "line": "L1",
+  "part_no": "PART-A100",
+  "lot": "LOT-20240115",
+  "result": "PASS",
+  "inspector": "김검사",
+  "date": "2024-01-15",
+  "remark": "정상 검사 완료",
+  "measurements": [
+    {
+      "item": "외경",
+      "spec": "10.0 ± 0.1",
+      "measured": "10.02",
+      "unit": "mm",
+      "result": "PASS"
+    },
+    {
+      "item": "내경",
+      "spec": "5.0 ± 0.05",
+      "measured": "5.01",
+      "unit": "mm",
+      "result": "PASS"
+    },
+    {
+      "item": "두께",
+      "spec": "2.5 ± 0.1",
+      "measured": "2.48",
+      "unit": "mm",
+      "result": "PASS"
+    }
+  ]
+}

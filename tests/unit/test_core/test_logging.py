@@ -127,14 +127,15 @@ class TestEmitOverride:
     """emit_override 함수 테스트."""
 
     def test_adds_override_to_list(self):
-        """override가 리스트에 추가됨."""
+        """override가 리스트에 추가됨 (신규 스키마)."""
         run_log = create_run_log("JOB-001")
 
         emit_override(
             run_log,
             field_or_slot="inspector",
             override_type="field",
-            reason="담당자 변경",
+            reason_code="DATA_UNAVAILABLE",
+            reason_detail="담당자 정보가 제공되지 않았습니다",
             user="admin",
         )
 
@@ -142,7 +143,9 @@ class TestEmitOverride:
         override = run_log.overrides[0]
         assert override.field_or_slot == "inspector"
         assert override.type == "field"
-        assert override.reason == "담당자 변경"
+        assert override.reason_code == "DATA_UNAVAILABLE"
+        assert override.reason_detail == "담당자 정보가 제공되지 않았습니다"
+        assert override.reason == "DATA_UNAVAILABLE: 담당자 정보가 제공되지 않았습니다"
         assert override.user == "admin"
 
     def test_override_has_timestamp(self):
@@ -150,7 +153,7 @@ class TestEmitOverride:
         run_log = create_run_log("JOB-001")
 
         before = datetime.now(timezone.utc)
-        emit_override(run_log, "field", "field", "reason", "user")
+        emit_override(run_log, "field", "field", "OTHER", "상세 사유 테스트입니다", "user")
         after = datetime.now(timezone.utc)
 
         override = run_log.overrides[0]
@@ -160,7 +163,7 @@ class TestEmitOverride:
     def test_override_code_applied(self):
         """override 코드는 OVERRIDE_APPLIED."""
         run_log = create_run_log("JOB-001")
-        emit_override(run_log, "field", "field", "reason", "user")
+        emit_override(run_log, "field", "field", "MISSING_PHOTO", "사진 누락 사유", "user")
 
         assert run_log.overrides[0].code == "OVERRIDE_APPLIED"
 
@@ -276,7 +279,8 @@ class TestSaveLoadRunLog:
             run_log,
             field_or_slot="inspector",
             override_type="field",
-            reason="reason",
+            reason_code="DATA_UNAVAILABLE",
+            reason_detail="데이터 미제공으로 인한 필드 생략",
             user="user",
         )
 

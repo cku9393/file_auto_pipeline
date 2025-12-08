@@ -66,10 +66,10 @@
 ## 1. 폴더 구조
 
 ```
-manufacturing-docs-pipeline/
+file-auto-pipeline/
 │
 ├── definition.yaml              # 입력 계약 SSOT (override_allowed 추가)
-├── pixi.toml                    # 의존성
+├── pyproject.toml               # 의존성 (uv)
 ├── README.md
 │
 ├── configs/
@@ -264,67 +264,64 @@ manufacturing-docs-pipeline/
 
 | 명령어 | 설명 |
 |--------|------|
-| `pixi run generate` | 보고서 생성 (기존 pipeline) |
-| `pixi run register-template` | 예시 → 템플릿 등록 |
-| `pixi run serve` | 웹 UI 서버 시작 |
+| `uv run uvicorn src.app.main:app --reload` | 개발 서버 실행 |
+| `uv run pytest tests/` | 테스트 실행 |
+| `uv run ruff check src/` | 코드 린팅 |
+
+> **Note**: CLI 파이프라인(`generate`, `register-template`)은 Phase 6 예정.
+> 현재는 웹 API(`/api/generate`, `/api/templates`)를 사용합니다.
 
 ### 3.2 상세
 
-#### `generate` (기존 확장)
-
-```bash
-# 기본 템플릿으로 생성
-pixi run generate jobs/demo_001
-
-# 예시 템플릿 선택
-pixi run generate jobs/demo_001 --template inspection/customer_a
-
-# Override 허용 (대화형)
-pixi run generate jobs/demo_001 --allow-override
-
-# PDF 포함
-pixi run generate jobs/demo_001 --pdf
-```
-
-#### `register-template` (신규)
-
-```bash
-# 예시 문서로 템플릿 등록
-pixi run register-template \
-  --doc-type inspection \
-  --name customer_a \
-  --example-report ./examples/report.pdf \
-  --example-input ./examples/input.xlsx \
-  --example-photos ./examples/photos/
-
-# 결과: templates/custom/customer_a/ 생성
-```
-
-#### `serve` (신규)
+#### 웹 서버 실행
 
 ```bash
 # 개발 모드 (자동 리로드)
-pixi run serve --dev
+uv run uvicorn src.app.main:app --reload --port 8000
 
 # 프로덕션 모드
-pixi run serve --host 0.0.0.0 --port 8080
+uv run uvicorn src.app.main:app --host 0.0.0.0 --port 8080
 
 # 기본: http://localhost:8000
 ```
 
-### 3.3 pixi.toml 추가 태스크
+#### 보고서 생성 (API)
 
-```toml
-[tasks]
-# CLI (core 파이프라인)
-generate = "python -m src.core.pipeline"
+```bash
+# POST /api/generate
+curl -X POST http://localhost:8000/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{"job_id": "JOB-xxx", "template_id": "default"}'
+```
 
-# 템플릿 관리
-register-template = "python -m src.templates.cli"
+#### 템플릿 관리 (API)
 
-# 웹 서버
-serve = "python -m src.app.main"
-serve-dev = "uvicorn src.app.main:app --reload"
+```bash
+# GET /api/templates - 목록 조회
+curl http://localhost:8000/api/templates
+
+# POST /api/templates - 템플릿 생성
+curl -X POST http://localhost:8000/api/templates \
+  -F "file=@template.docx" \
+  -F "name=customer_a"
+```
+
+### 3.3 개발 명령어
+
+```bash
+# 의존성 설치
+uv sync --all-extras --dev
+
+# 테스트
+uv run pytest tests/ -v
+uv run pytest tests/ --cov=src --cov-report=term-missing
+
+# 린팅 & 포맷팅
+uv run ruff check src/ tests/
+uv run ruff format src/ tests/
+
+# 타입 체크
+uv run mypy src/
 ```
 
 ---
@@ -701,38 +698,30 @@ label_mappings:
 
 ---
 
-## 7. 의존성 추가 (pixi.toml)
+## 7. 의존성 관리 (uv + pyproject.toml)
 
-```toml
-[dependencies]
-# 기존 (파이프라인 코어)
-python = ">=3.10"
-openpyxl = ">=3.1"           # Excel 읽기/쓰기
-jinja2 = ">=3.1"             # 템플릿 렌더링 (HTML UI용)
-pyyaml = ">=6.0"
-pillow = ">=10.0"            # 이미지 처리
-filelock = ">=3.12"
+패키지 매니저는 **uv**를 사용합니다. 의존성은 `pyproject.toml`에 정의됩니다.
 
-# [신규] AI API
-anthropic = ">=0.40"         # Claude API
-google-generativeai = ">=0.8"  # Gemini API (OCR)
+```bash
+# 의존성 설치
+uv sync --all-extras --dev
 
-# [신규] 웹 UI (HTMX 기반 - 단순)
-fastapi = ">=0.109"
-uvicorn = ">=0.27"
-python-multipart = ">=0.0.6"  # 파일 업로드
+# 의존성 추가
+uv add <package-name>
 
-# [신규] 문서 출력 (DOCX/XLSX)
-python-docx = ">=1.1"         # DOCX 읽기
-docxtpl = ">=0.16"            # DOCX 템플릿 렌더링
-# openpyxl: 이미 포함 (Excel 읽기/쓰기 통합)
-
-# [선택] PDF 출력 (필요시)
-# weasyprint = ">=60.0"       # 시스템 의존성 있음, 필수 아님
-
-# [선택] 검증
-pydantic = ">=2.0"            # 스키마 검증
+# 개발 의존성 추가
+uv add --dev <package-name>
 ```
+
+### 주요 의존성
+
+| 카테고리 | 패키지 | 용도 |
+|----------|--------|------|
+| 코어 | openpyxl, pyyaml, pillow | Excel/YAML/이미지 처리 |
+| AI API | anthropic, google-generativeai | Claude/Gemini API |
+| 웹 UI | fastapi, uvicorn, python-multipart | HTMX 기반 웹앱 |
+| 문서 출력 | python-docx, docxtpl | DOCX 템플릿 렌더링 |
+| 검증 | pydantic | 스키마 검증 |
 
 > 💡 **HTMX 사용**: 프론트엔드 빌드 없이 HTML + HTMX로 동적 UI 구현  
 > CDN: `<script src="https://unpkg.com/htmx.org@1.9.10"></script>`
@@ -741,7 +730,7 @@ pydantic = ">=2.0"            # 스키마 검증
 
 ```bash
 # .env 또는 환경 변수로 설정
-ANTHROPIC_API_KEY=sk-ant-...      # Claude API 키
+MY_ANTHROPIC_KEY=sk-ant-...       # Claude API 키
 GOOGLE_API_KEY=AI...              # Gemini API 키
 ```
 

@@ -22,6 +22,7 @@ from src.domain.schemas import (
     IntakeMessage,
     IntakeSession,
     OCRResult,
+    PhotoMapping,
     UserCorrection,
 )
 
@@ -250,6 +251,51 @@ class IntakeService:
 
         return fields
 
+    def add_photo_mapping(
+        self,
+        slot_key: str,
+        filename: str,
+        raw_path: str,
+    ) -> PhotoMapping:
+        """
+        사진 슬롯 매핑 추가.
+
+        Args:
+            slot_key: 슬롯 키 (예: overview, label_serial)
+            filename: 원본 파일명
+            raw_path: 저장된 raw 경로
+
+        Returns:
+            PhotoMapping
+        """
+        session = self.load_session()
+
+        mapping = PhotoMapping(
+            slot_key=slot_key,
+            filename=filename,
+            raw_path=raw_path,
+            mapped_at=datetime.now(UTC).isoformat(),
+        )
+
+        # 기존 매핑 업데이트 (같은 슬롯이면 교체)
+        session.photo_mappings = [
+            m for m in session.photo_mappings if m.slot_key != slot_key
+        ]
+        session.photo_mappings.append(mapping)
+
+        self._save_session(session)
+        return mapping
+
+    def get_photo_mappings(self) -> dict[str, PhotoMapping]:
+        """
+        현재 사진 매핑 상태 조회.
+
+        Returns:
+            {slot_key: PhotoMapping}
+        """
+        session = self.load_session()
+        return {m.slot_key: m for m in session.photo_mappings}
+
     def _save_upload(self, filename: str, file_bytes: bytes) -> Path:
         """업로드 파일 저장."""
         self.uploads_dir.mkdir(parents=True, exist_ok=True)
@@ -314,6 +360,15 @@ class IntakeService:
                 }
                 for c in session.user_corrections
             ],
+            "photo_mappings": [
+                {
+                    "slot_key": p.slot_key,
+                    "filename": p.filename,
+                    "raw_path": p.raw_path,
+                    "mapped_at": p.mapped_at,
+                }
+                for p in session.photo_mappings
+            ],
         }
 
     def _dict_to_session(self, data: dict[str, Any]) -> IntakeSession:
@@ -373,6 +428,24 @@ class IntakeService:
                 model_requested=er.get("model_requested"),
                 model_used=er.get("model_used"),
                 extracted_at=er.get("extracted_at"),
+                # === 조건부 재현성 메타데이터 ===
+                provider=er.get("provider"),
+                model_params=er.get("model_params"),
+                request_id=er.get("request_id"),
+                # === Raw 저장 ===
+                llm_raw_output=er.get("llm_raw_output"),
+                llm_raw_output_hash=er.get("llm_raw_output_hash"),
+                llm_raw_truncated=er.get("llm_raw_truncated", False),
+                # === 프롬프트 분리 저장 ===
+                prompt_template_id=er.get("prompt_template_id"),
+                prompt_template_version=er.get("prompt_template_version"),
+                prompt_user_variables=er.get("prompt_user_variables"),
+                prompt_rendered=er.get("prompt_rendered"),
+                prompt_hash=er.get("prompt_hash"),
+                prompt_used=er.get("prompt_used"),  # 하위 호환
+                # === 추출 방법 ===
+                extraction_method=er.get("extraction_method"),
+                regex_version=er.get("regex_version"),
             )
 
         # User Corrections
@@ -383,6 +456,15 @@ class IntakeService:
                 corrected=c["corrected"],
                 corrected_at=c["corrected_at"],
                 corrected_by=c.get("corrected_by", "user"),
+            ))
+
+        # Photo Mappings
+        for p in data.get("photo_mappings", []):
+            session.photo_mappings.append(PhotoMapping(
+                slot_key=p["slot_key"],
+                filename=p["filename"],
+                raw_path=p["raw_path"],
+                mapped_at=p["mapped_at"],
             ))
 
         return session

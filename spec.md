@@ -1,6 +1,6 @@
 # System Specification
 
-Manufacturing Documentation Pipeline의 시스템 명세입니다.
+File Auto Pipeline의 시스템 명세입니다.
 
 > **확장 명세**: 채팅 UI, AI 파싱, 템플릿 라이브러리, Override 시스템 등  
 > 확장 기능은 [spec-v2.md](./spec-v2.md)를 참조하세요.
@@ -514,9 +514,9 @@ jobs/
 ### 실행 방법
 
 ```bash
-pixi run test           # 전체 테스트
-pixi run test-cov       # 커버리지 포함
-pixi run check          # lint + test
+uv run pytest tests/ -v              # 전체 테스트
+uv run pytest tests/ --cov=src       # 커버리지 포함
+uv run ruff check src/ && uv run pytest  # lint + test
 ```
 
 ---

@@ -207,12 +207,16 @@ async def upload_file(
     """
     파일 첨부.
 
-    이미지 파일인 경우 OCR 자동 실행.
+    이미지 파일인 경우:
+    1. photos/raw/에 저장
+    2. 슬롯 자동 매핑
+    3. OCR 자동 실행
 
     Returns:
-        업로드 결과 (filename, size, path, ocr_result)
+        업로드 결과 (filename, size, path, slot_mapped, ocr_result)
     """
     from src.app.services.ocr import OCRService
+    from src.core.photos import PhotoService
 
     # 세션 ID 검증
     if not session_id:
@@ -225,23 +229,69 @@ async def upload_file(
     # IntakeService 연동
     intake = get_or_create_intake(request, session_id)
 
-    # 파일 첨부로 메시지 추가
-    intake.add_message(
-        role="user",
-        content=f"[파일 첨부: {filename}]",
-        attachments=[(filename, file_bytes)],
-    )
-
     # Job ID
     job_id = _session_to_job.get(session_id, "unknown")
+    jobs_root: Path = request.app.state.jobs_root
+    job_dir = jobs_root / job_id
+    definition_path: Path = request.app.state.definition_path
 
     # 이미지 파일인지 확인
     file_ext = Path(filename).suffix.lower()
-    image_extensions = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf"}
+    photo_extensions = {".jpg", ".jpeg", ".png"}
+    ocr_extensions = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf"}
 
+    slot_key: str | None = None
+    raw_path: str | None = None
+
+    # 사진 슬롯 매핑 처리
+    if file_ext in photo_extensions:
+        photo_service = PhotoService(job_dir, definition_path)
+
+        # 파일명으로 슬롯 매칭 시도
+        matched_slot = photo_service.match_slot_for_file(filename)
+
+        # raw/에 저장
+        saved_path = photo_service.save_upload(filename, file_bytes)
+        raw_path = str(saved_path)
+
+        if matched_slot:
+            # 슬롯 매핑 기록
+            intake.add_photo_mapping(
+                slot_key=matched_slot.key,
+                filename=filename,
+                raw_path=str(saved_path.relative_to(job_dir)),
+            )
+            slot_key = matched_slot.key
+
+            # 어시스턴트 메시지
+            intake.add_message(
+                role="assistant",
+                content=f"📷 사진이 '{matched_slot.key}' 슬롯에 매핑되었습니다.",
+            )
+        else:
+            # 슬롯 미매칭 - 일반 사진으로 저장됨
+            intake.add_message(
+                role="assistant",
+                content=f"📷 사진이 저장되었습니다. (슬롯 미매칭: {filename})",
+            )
+
+        # 파일 첨부 메시지
+        intake.add_message(
+            role="user",
+            content=f"[사진 첨부: {filename}]",
+            attachments=[(filename, file_bytes)],
+        )
+    else:
+        # 비-사진 파일은 기존 로직 유지
+        intake.add_message(
+            role="user",
+            content=f"[파일 첨부: {filename}]",
+            attachments=[(filename, file_bytes)],
+        )
+
+    # OCR 처리 (이미지/PDF)
     ocr_result = None
-    if file_ext in image_extensions:
-        # OCR 자동 실행
+    if file_ext in ocr_extensions:
         try:
             config = request.app.state.config
             ocr_service = OCRService(config)
@@ -271,6 +321,8 @@ async def upload_file(
         "session_id": session_id,
         "job_id": job_id,
         "message": "파일이 업로드되었습니다.",
+        "slot_mapped": slot_key,
+        "raw_path": raw_path,
         "ocr_executed": ocr_result is not None,
         "ocr_success": ocr_result.success if ocr_result else None,
     }

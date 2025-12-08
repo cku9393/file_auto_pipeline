@@ -11,13 +11,15 @@ ADR-0002 핵심 규칙:
 import json
 import re
 import shutil
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, Generator
 
 import yaml
+from filelock import FileLock, Timeout
 
 # =============================================================================
 # Exceptions
@@ -201,6 +203,9 @@ class TemplateManager:
     └── manifest.yaml    # 매핑 정보
     """
 
+    # 락 timeout (초)
+    LOCK_TIMEOUT = 10.0
+
     def __init__(self, templates_root: Path):
         """
         Args:
@@ -209,6 +214,40 @@ class TemplateManager:
         self.templates_root = templates_root
         self.custom_dir = templates_root / "custom"
         self.base_dir = templates_root / "base"
+        self._locks_dir = templates_root / ".locks"
+
+    @contextmanager
+    def _template_lock(self, template_id: str) -> Generator[None, None, None]:
+        """
+        템플릿별 락 획득.
+
+        동시성 보호: 같은 템플릿에 대한 동시 수정 방지.
+
+        Args:
+            template_id: 락을 획득할 템플릿 ID
+
+        Yields:
+            None
+
+        Raises:
+            TemplateError: TEMPLATE_LOCK_TIMEOUT
+        """
+        self._locks_dir.mkdir(parents=True, exist_ok=True)
+        lock_file = self._locks_dir / f"{template_id}.lock"
+        lock = FileLock(lock_file, timeout=self.LOCK_TIMEOUT)
+
+        try:
+            lock.acquire()
+            yield
+        except Timeout:
+            raise TemplateError(
+                "TEMPLATE_LOCK_TIMEOUT",
+                f"Failed to acquire lock for template '{template_id}'",
+                template_id=template_id,
+                timeout=self.LOCK_TIMEOUT,
+            )
+        finally:
+            lock.release()
 
     # =========================================================================
     # Create
@@ -241,37 +280,39 @@ class TemplateManager:
         # ID 검증
         validate_template_id(template_id)
 
-        # 중복 체크 (fail-fast)
-        template_path = self.custom_dir / template_id
-        if template_path.exists():
-            raise TemplateError(
-                "TEMPLATE_EXISTS",
-                f"Template '{template_id}' already exists",
+        # 동시성 보호: 전체 생성 과정을 락으로 보호
+        with self._template_lock(template_id):
+            # 중복 체크 (fail-fast)
+            template_path = self.custom_dir / template_id
+            if template_path.exists():
+                raise TemplateError(
+                    "TEMPLATE_EXISTS",
+                    f"Template '{template_id}' already exists",
+                    template_id=template_id,
+                )
+
+            # 폴더 구조 생성
+            (template_path / "source").mkdir(parents=True)
+            (template_path / "compiled").mkdir()
+
+            # 메타데이터 생성
+            now = datetime.now(UTC).isoformat()
+            meta = TemplateMeta(
                 template_id=template_id,
+                doc_type=doc_type,
+                display_name=display_name,
+                description=description,
+                status=TemplateStatus.DRAFT,
+                created_at=now,
+                created_by=created_by,
+                updated_at=now,
             )
+            self._save_meta(template_path, meta)
 
-        # 폴더 구조 생성
-        (template_path / "source").mkdir(parents=True)
-        (template_path / "compiled").mkdir()
+            # 빈 manifest 생성
+            self._save_manifest(template_path, self._default_manifest(template_id, doc_type))
 
-        # 메타데이터 생성
-        now = datetime.now(UTC).isoformat()
-        meta = TemplateMeta(
-            template_id=template_id,
-            doc_type=doc_type,
-            display_name=display_name,
-            description=description,
-            status=TemplateStatus.DRAFT,
-            created_at=now,
-            created_by=created_by,
-            updated_at=now,
-        )
-        self._save_meta(template_path, meta)
-
-        # 빈 manifest 생성
-        self._save_manifest(template_path, self._default_manifest(template_id, doc_type))
-
-        return template_path
+            return template_path
 
     # =========================================================================
     # Source Management (불변 가드)
@@ -301,35 +342,37 @@ class TemplateManager:
         Raises:
             TemplateError: TEMPLATE_NOT_FOUND, SOURCE_IMMUTABLE
         """
-        template_path = self._get_template_path(template_id)
-        source_dir = template_path / "source"
-        target = source_dir / filename
+        # 동시성 보호
+        with self._template_lock(template_id):
+            template_path = self._get_template_path(template_id)
+            source_dir = template_path / "source"
+            target = source_dir / filename
 
-        # 불변 가드: 이미 존재하면 에러
-        if target.exists():
-            raise TemplateError(
-                "SOURCE_IMMUTABLE",
-                f"source/{filename} already exists. Cannot overwrite.",
-                template_id=template_id,
-                filename=filename,
-            )
+            # 불변 가드: 이미 존재하면 에러
+            if target.exists():
+                raise TemplateError(
+                    "SOURCE_IMMUTABLE",
+                    f"source/{filename} already exists. Cannot overwrite.",
+                    template_id=template_id,
+                    filename=filename,
+                )
 
-        # 저장
-        target.write_bytes(file_bytes)
+            # 저장
+            target.write_bytes(file_bytes)
 
-        # readonly 설정 (Unix)
-        try:
-            target.chmod(0o444)  # r--r--r--
-        except OSError:
-            pass  # Windows에서는 무시
+            # readonly 설정 (Unix)
+            try:
+                target.chmod(0o444)  # r--r--r--
+            except OSError:
+                pass  # Windows에서는 무시
 
-        # 메타데이터 업데이트
-        meta = self.get_meta(template_id)
-        meta.derived_from = filename
-        meta.updated_at = datetime.now(UTC).isoformat()
-        self._save_meta(template_path, meta)
+            # 메타데이터 업데이트
+            meta = self.get_meta(template_id)
+            meta.derived_from = filename
+            meta.updated_at = datetime.now(UTC).isoformat()
+            self._save_meta(template_path, meta)
 
-        return target
+            return target
 
     def save_compiled(
         self,
@@ -494,19 +537,21 @@ class TemplateManager:
         Returns:
             업데이트된 TemplateMeta
         """
-        template_path = self._get_template_path(template_id)
-        meta = self.get_meta(template_id)
+        # 동시성 보호
+        with self._template_lock(template_id):
+            template_path = self._get_template_path(template_id)
+            meta = self.get_meta(template_id)
 
-        now = datetime.now(UTC).isoformat()
-        meta.status = new_status
-        meta.updated_at = now
+            now = datetime.now(UTC).isoformat()
+            meta.status = new_status
+            meta.updated_at = now
 
-        if new_status == TemplateStatus.READY and reviewed_by:
-            meta.reviewed_by = reviewed_by
-            meta.reviewed_at = now
+            if new_status == TemplateStatus.READY and reviewed_by:
+                meta.reviewed_by = reviewed_by
+                meta.reviewed_at = now
 
-        self._save_meta(template_path, meta)
-        return meta
+            self._save_meta(template_path, meta)
+            return meta
 
     def update_manifest(
         self,
@@ -551,28 +596,30 @@ class TemplateManager:
         Raises:
             TemplateError: TEMPLATE_NOT_FOUND, DELETE_NOT_ALLOWED
         """
-        template_path = self._get_template_path(template_id)
+        # 동시성 보호
+        with self._template_lock(template_id):
+            template_path = self._get_template_path(template_id)
 
-        if not force:
-            meta = self.get_meta(template_id)
-            if meta.status != TemplateStatus.ARCHIVED:
-                raise TemplateError(
-                    "DELETE_NOT_ALLOWED",
-                    f"Template '{template_id}' is not archived. Use force=True or archive first.",
-                    template_id=template_id,
-                    status=meta.status.value,
-                )
+            if not force:
+                meta = self.get_meta(template_id)
+                if meta.status != TemplateStatus.ARCHIVED:
+                    raise TemplateError(
+                        "DELETE_NOT_ALLOWED",
+                        f"Template '{template_id}' is not archived. Use force=True or archive first.",
+                        template_id=template_id,
+                        status=meta.status.value,
+                    )
 
-        # source/ 파일 readonly 해제 후 삭제
-        source_dir = template_path / "source"
-        if source_dir.exists():
-            for f in source_dir.iterdir():
-                try:
-                    f.chmod(0o644)
-                except OSError:
-                    pass
+            # source/ 파일 readonly 해제 후 삭제
+            source_dir = template_path / "source"
+            if source_dir.exists():
+                for f in source_dir.iterdir():
+                    try:
+                        f.chmod(0o644)
+                    except OSError:
+                        pass
 
-        shutil.rmtree(template_path)
+            shutil.rmtree(template_path)
 
     # =========================================================================
     # Internal Helpers

@@ -4,8 +4,14 @@ Validation Service: definition.yaml 기반 검증 + override 처리.
 ADR-0003:
 - LLM은 구조화 제안만, 최종 판정은 여기서
 - override 로그 스키마 준수 (필수 키 체크)
+
+Override 품질 검증:
+- reason_code: OverrideReasonCode enum 값만 허용
+- reason_detail: 최소 10자, 금지 토큰 거절
+- 레거시 문자열 파싱 지원 ("CODE: detail" 또는 "CODE|detail")
 """
 
+import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
@@ -15,7 +21,182 @@ from typing import Any
 import yaml
 
 from src.domain.errors import ErrorCodes, PolicyRejectError
-from src.domain.schemas import OverrideLog
+from src.domain.schemas import OverrideLog, OverrideReasonCode
+
+
+# =============================================================================
+# Override Reason 검증 상수
+# =============================================================================
+
+# 금지 토큰 (대소문자/공백 변형 무시)
+FORBIDDEN_TOKENS = frozenset([
+    "ok", "okay", "n/a", "na", "none", "-", "skip", "pass", "test",
+    ".", "..", "...", "x", "xx", "xxx", "ㅇ", "ㅇㅇ", "ㅇㅇㅇ",
+])
+
+# 최소 상세 사유 길이
+MIN_REASON_DETAIL_LENGTH = 10
+
+
+# =============================================================================
+# Override Reason 파싱 결과
+# =============================================================================
+
+@dataclass
+class ParsedOverrideReason:
+    """파싱된 override 사유."""
+    code: OverrideReasonCode
+    detail: str
+    raw: str  # 원본 입력
+
+
+@dataclass
+class OverrideReasonError:
+    """Override 사유 검증 실패 정보."""
+    field: str
+    error_type: str  # "forbidden_token", "min_length", "invalid_code"
+    message: str
+    raw_value: Any
+
+
+# =============================================================================
+# Override Reason 검증 함수
+# =============================================================================
+
+def parse_override_reason(raw: Any) -> ParsedOverrideReason:
+    """
+    Override 사유 파싱.
+
+    지원 형식:
+    1. 신규 구조: {"code": "MISSING_PHOTO", "detail": "현장 촬영 누락으로 대체 자료 사용"}
+    2. 레거시 문자열:
+       - "MISSING_PHOTO: 현장 촬영 누락으로 대체 자료 사용"
+       - "MISSING_PHOTO|현장 촬영 누락으로 대체 자료 사용"
+       - "현장 사정으로 값 누락" → code=OTHER, detail=원문
+
+    Args:
+        raw: 원본 입력 (dict 또는 str)
+
+    Returns:
+        ParsedOverrideReason
+    """
+    raw_str = str(raw) if not isinstance(raw, dict) else ""
+
+    # 1. 신규 구조 (dict)
+    if isinstance(raw, dict):
+        code_str = str(raw.get("code", "OTHER")).upper()
+        detail = str(raw.get("detail", "")).strip()
+
+        try:
+            code = OverrideReasonCode(code_str)
+        except ValueError:
+            code = OverrideReasonCode.OTHER
+
+        return ParsedOverrideReason(code=code, detail=detail, raw=str(raw))
+
+    # 2. 레거시 문자열 파싱
+    raw_str = str(raw).strip()
+
+    # "CODE: detail" 또는 "CODE|detail" 형식 파싱
+    # 패턴: 대문자+언더스코어로 시작하고 : 또는 | 로 구분
+    pattern = r"^([A-Z][A-Z0-9_]*)\s*[:|]\s*(.+)$"
+    match = re.match(pattern, raw_str)
+
+    if match:
+        code_str = match.group(1)
+        detail = match.group(2).strip()
+
+        try:
+            code = OverrideReasonCode(code_str)
+        except ValueError:
+            # 유효하지 않은 코드면 OTHER로 처리, 전체를 detail로
+            code = OverrideReasonCode.OTHER
+            detail = raw_str
+    else:
+        # prefix 없음 → code=OTHER, detail=원문
+        code = OverrideReasonCode.OTHER
+        detail = raw_str
+
+    return ParsedOverrideReason(code=code, detail=detail, raw=raw_str)
+
+
+def is_forbidden_reason(detail: str) -> tuple[bool, str | None]:
+    """
+    금지 토큰 검사.
+
+    Args:
+        detail: 상세 사유
+
+    Returns:
+        (금지 여부, 발견된 토큰 또는 None)
+    """
+    # 정규화: 소문자, 공백 제거
+    normalized = detail.lower().strip()
+    normalized_no_space = re.sub(r"\s+", "", normalized)
+
+    # 정확히 일치하는 경우만 금지
+    if normalized in FORBIDDEN_TOKENS or normalized_no_space in FORBIDDEN_TOKENS:
+        return True, normalized
+
+    return False, None
+
+
+def validate_override_reason(
+    field_name: str,
+    raw: Any,
+    require_reason: bool = True,
+) -> tuple[ParsedOverrideReason | None, OverrideReasonError | None]:
+    """
+    Override 사유 검증.
+
+    검증 규칙:
+    1. 금지 토큰 거절
+    2. 최소 길이 검증 (10자)
+    3. 코드 유효성 검증
+
+    Args:
+        field_name: 필드명
+        raw: 원본 입력
+        require_reason: 사유 필수 여부
+
+    Returns:
+        (ParsedOverrideReason, None) 성공 시
+        (None, OverrideReasonError) 실패 시
+    """
+    # 빈 값 체크
+    if raw is None or (isinstance(raw, str) and not raw.strip()):
+        if require_reason:
+            return None, OverrideReasonError(
+                field=field_name,
+                error_type="empty_reason",
+                message="Override 사유가 비어 있습니다",
+                raw_value=raw,
+            )
+        return None, None
+
+    # 파싱
+    parsed = parse_override_reason(raw)
+
+    # 1. 금지 토큰 검사
+    is_forbidden, token = is_forbidden_reason(parsed.detail)
+    if is_forbidden:
+        return None, OverrideReasonError(
+            field=field_name,
+            error_type="forbidden_token",
+            message=f"금지 토큰 포함: '{token}'",
+            raw_value=raw,
+        )
+
+    # 2. 최소 길이 검사
+    if len(parsed.detail) < MIN_REASON_DETAIL_LENGTH:
+        return None, OverrideReasonError(
+            field=field_name,
+            error_type="min_length",
+            message=f"최소 길이 미달: {len(parsed.detail)}자 (최소 {MIN_REASON_DETAIL_LENGTH}자)",
+            raw_value=raw,
+        )
+
+    return parsed, None
 
 # =============================================================================
 # Validation Result
@@ -38,6 +219,10 @@ class ValidationResult:
 
     # 적용된 Override
     applied_overrides: list[OverrideLog] = field(default_factory=list)
+
+    # Override 검증 실패 (error_context용)
+    invalid_override_fields: list[str] = field(default_factory=list)
+    invalid_override_reasons: dict[str, str] = field(default_factory=dict)
 
 
 # =============================================================================
@@ -119,14 +304,30 @@ class ValidationService:
                 if importance == "critical":
                     # Override 가능?
                     if override_allowed and field_name in overrides:
-                        reason = overrides[field_name]
-                        if requires_reason and not reason:
-                            result.missing_required.append(field_name)
+                        raw_reason = overrides[field_name]
+
+                        # Override 사유 품질 검증
+                        parsed, error = validate_override_reason(
+                            field_name, raw_reason, require_reason=requires_reason
+                        )
+
+                        if error:
+                            # 검증 실패 → 거절
+                            result.invalid_override_fields.append(field_name)
+                            result.invalid_override_reasons[field_name] = error.message
                             result.valid = False
-                        else:
+                        elif parsed:
+                            # 검증 통과 → override 적용
                             result.applied_overrides.append(
                                 self._create_override_log(
-                                    field_name, "field", reason, user
+                                    field_name, "field", parsed, user
+                                )
+                            )
+                        elif not requires_reason:
+                            # 사유 불필요 케이스 (현재 코드에서는 드뭄)
+                            result.applied_overrides.append(
+                                self._create_override_log(
+                                    field_name, "field", None, user
                                 )
                             )
                     elif override_allowed:
@@ -250,15 +451,37 @@ class ValidationService:
         self,
         field_or_slot: str,
         override_type: str,
-        reason: str,
+        parsed_reason: ParsedOverrideReason | None,
         user: str,
     ) -> OverrideLog:
-        """Override 로그 생성."""
+        """
+        Override 로그 생성.
+
+        Args:
+            field_or_slot: 필드 또는 슬롯 이름
+            override_type: "field" 또는 "photo"
+            parsed_reason: 파싱된 override 사유 (None이면 사유 불필요 케이스)
+            user: 사용자 ID
+
+        Returns:
+            OverrideLog
+        """
+        if parsed_reason:
+            reason_code = parsed_reason.code.value
+            reason_detail = parsed_reason.detail
+            reason = f"{reason_code}: {reason_detail}"
+        else:
+            reason_code = OverrideReasonCode.OTHER.value
+            reason_detail = "(사유 불필요)"
+            reason = reason_detail
+
         return OverrideLog(
             code="OVERRIDE_APPLIED",
             timestamp=datetime.now(UTC).isoformat(),
             field_or_slot=field_or_slot,
             type=override_type,
+            reason_code=reason_code,
+            reason_detail=reason_detail,
             reason=reason,
             user=user,
         )

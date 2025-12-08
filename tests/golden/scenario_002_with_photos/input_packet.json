@@ -1,0 +1,40 @@
+{
+  "wo_no": "WO-2024-002",
+  "line": "L2",
+  "part_no": "PART-B200",
+  "lot": "LOT-20240116",
+  "result": "PASS",
+  "inspector": "박검사",
+  "date": "2024-01-16",
+  "remark": "사진 포함 테스트 시나리오",
+  "measurements": [
+    {
+      "item": "외경",
+      "spec": "15.0 ± 0.2",
+      "measured": "15.05",
+      "unit": "mm",
+      "result": "PASS"
+    },
+    {
+      "item": "내경",
+      "spec": "10.0 ± 0.1",
+      "measured": "10.02",
+      "unit": "mm",
+      "result": "PASS"
+    },
+    {
+      "item": "높이",
+      "spec": "25.0 ± 0.3",
+      "measured": "24.95",
+      "unit": "mm",
+      "result": "PASS"
+    },
+    {
+      "item": "무게",
+      "spec": "100 ± 5",
+      "measured": "98.5",
+      "unit": "g",
+      "result": "PASS"
+    }
+  ]
+}

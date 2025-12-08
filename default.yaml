@@ -2,10 +2,10 @@
 # configs/default.yaml - 기본 런타임 설정
 # =============================================================================
 # 환경별 오버라이드: production.yaml, development.yaml 등
-# 
+#
 # 사용법:
-#   pixi run pipeline jobs/demo_001                              # default.yaml 사용
-#   pixi run pipeline jobs/demo_001 --config configs/production.yaml
+#   uv run python -m src.pipeline jobs/demo_001                  # default.yaml 사용
+#   uv run python -m src.pipeline jobs/demo_001 --config configs/production.yaml
 # =============================================================================
 
 # -----------------------------------------------------------------------------

@@ -25,9 +25,9 @@ async def test_anthropic():
     print("🧪 Anthropic Claude API 테스트")
     print("=" * 60)
 
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    api_key = os.environ.get("MY_ANTHROPIC_KEY")
     if not api_key or api_key.startswith("sk-ant-api03-..."):
-        print("❌ ANTHROPIC_API_KEY가 설정되지 않았습니다.")
+        print("❌ MY_ANTHROPIC_KEY가 설정되지 않았습니다.")
         print("   .env 파일에 실제 API 키를 입력하세요.")
         return False
 
