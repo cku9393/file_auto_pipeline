@@ -32,6 +32,7 @@ from src.testing.golden.xlsx_extract import XlsxExtractor
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def project_root() -> Path:
     """Get project root directory."""
@@ -78,6 +79,7 @@ def golden_runner(templates_dir: Path, output_dir: Path) -> GoldenRunner:
 # Helper Functions
 # =============================================================================
 
+
 def load_scenario(golden_dir: Path, scenario_name: str) -> GoldenScenario:
     """Load a specific scenario by name."""
     scenario_path = golden_dir / scenario_name
@@ -87,6 +89,7 @@ def load_scenario(golden_dir: Path, scenario_name: str) -> GoldenScenario:
 # =============================================================================
 # Test: Extractors
 # =============================================================================
+
 
 class TestExtractors:
     """Test DOCX and XLSX extractors work correctly."""
@@ -105,6 +108,7 @@ class TestExtractors:
 # =============================================================================
 # Test: Normalizer
 # =============================================================================
+
 
 class TestNormalizer:
     """Test normalizer handles variable elements."""
@@ -139,6 +143,7 @@ class TestNormalizer:
 # =============================================================================
 # Test: Compare
 # =============================================================================
+
 
 class TestCompare:
     """Test comparison utilities."""
@@ -194,6 +199,7 @@ class TestCompare:
 # Test: Golden Scenario Loading
 # =============================================================================
 
+
 class TestScenarioLoading:
     """Test golden scenario loading."""
 
@@ -225,6 +231,7 @@ class TestScenarioLoading:
 # =============================================================================
 # Test: Golden Rendering (Main Tests)
 # =============================================================================
+
 
 class TestGoldenRendering:
     """
@@ -298,7 +305,9 @@ class TestGoldenRendering:
         assert found_measurement, "Should have at least one measurement with data"
 
     @pytest.mark.skipif(
-        not (Path(__file__).parent / "scenario_001_basic" / "expected" / "docx.json").exists(),
+        not (
+            Path(__file__).parent / "scenario_001_basic" / "expected" / "docx.json"
+        ).exists(),
         reason="Expected docx.json not yet generated",
     )
     def test_scenario_001_docx_matches_expected(
@@ -313,7 +322,9 @@ class TestGoldenRendering:
         docx_result, _ = golden_runner.run_scenario(scenario, assert_match=True)
 
     @pytest.mark.skipif(
-        not (Path(__file__).parent / "scenario_001_basic" / "expected" / "xlsx.json").exists(),
+        not (
+            Path(__file__).parent / "scenario_001_basic" / "expected" / "xlsx.json"
+        ).exists(),
         reason="Expected xlsx.json not yet generated",
     )
     def test_scenario_001_xlsx_matches_expected(
@@ -331,6 +342,7 @@ class TestGoldenRendering:
 # =============================================================================
 # Test: Photos in DOCX
 # =============================================================================
+
 
 class TestPhotosInDocx:
     """Test that photos are included in DOCX output."""
@@ -363,6 +375,7 @@ class TestPhotosInDocx:
 # Test: Scenario 002 with Photos (Image Golden Tests)
 # =============================================================================
 
+
 @pytest.fixture
 def photos_runner(templates_dir: Path, output_dir: Path) -> GoldenRunner:
     """Get golden test runner with auto template selection."""
@@ -381,7 +394,9 @@ class TestScenario002WithPhotos:
     """
 
     @pytest.mark.skipif(
-        not (Path(__file__).parent / "scenario_002_with_photos" / "input_packet.json").exists(),
+        not (
+            Path(__file__).parent / "scenario_002_with_photos" / "input_packet.json"
+        ).exists(),
         reason="scenario_002_with_photos not yet created",
     )
     def test_scenario_002_has_photos(self, golden_dir: Path):
@@ -393,7 +408,9 @@ class TestScenario002WithPhotos:
         assert "label_serial" in scenario.photos, "Must have label_serial photo"
 
     @pytest.mark.skipif(
-        not (Path(__file__).parent / "scenario_002_with_photos" / "input_packet.json").exists(),
+        not (
+            Path(__file__).parent / "scenario_002_with_photos" / "input_packet.json"
+        ).exists(),
         reason="scenario_002_with_photos not yet created",
     )
     def test_scenario_002_docx_contains_images(
@@ -414,10 +431,14 @@ class TestScenario002WithPhotos:
         if images and "_image_summary" in images[0]:
             summary = images[0]["_image_summary"]
             assert summary["total_count"] >= 2, "Should have at least 2 images"
-            assert summary["media_file_count"] >= 2, "Should have at least 2 media files"
+            assert summary["media_file_count"] >= 2, (
+                "Should have at least 2 media files"
+            )
 
     @pytest.mark.skipif(
-        not (Path(__file__).parent / "scenario_002_with_photos" / "input_packet.json").exists(),
+        not (
+            Path(__file__).parent / "scenario_002_with_photos" / "input_packet.json"
+        ).exists(),
         reason="scenario_002_with_photos not yet created",
     )
     def test_scenario_002_image_slots_inferred(
@@ -433,9 +454,7 @@ class TestScenario002WithPhotos:
 
         # Check for slot inference (not all images will have slots)
         slots_found = [
-            img.get("inferred_slot")
-            for img in images
-            if img.get("inferred_slot")
+            img.get("inferred_slot") for img in images if img.get("inferred_slot")
         ]
 
         # At least one slot should be inferred
@@ -444,7 +463,12 @@ class TestScenario002WithPhotos:
         print(f"Inferred slots: {slots_found}")
 
     @pytest.mark.skipif(
-        not (Path(__file__).parent / "scenario_002_with_photos" / "expected" / "docx.json").exists(),
+        not (
+            Path(__file__).parent
+            / "scenario_002_with_photos"
+            / "expected"
+            / "docx.json"
+        ).exists(),
         reason="Expected docx.json not yet generated for scenario_002",
     )
     def test_scenario_002_docx_matches_expected(
@@ -466,6 +490,7 @@ class TestScenario002WithPhotos:
 # =============================================================================
 # Test: Normalizer Replacement Counting
 # =============================================================================
+
 
 class TestNormalizerStats:
     """Test normalizer replacement counting and threshold warnings."""
@@ -519,6 +544,7 @@ class TestNormalizerStats:
 # =============================================================================
 # Parametrized Test for All Scenarios
 # =============================================================================
+
 
 def get_all_scenarios() -> list[str]:
     """Get all scenario names for parametrization."""

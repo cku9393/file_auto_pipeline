@@ -21,6 +21,7 @@ from src.render.excel import ExcelRenderer, load_manifest, render_xlsx
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def simple_xlsx_template(tmp_path: Path) -> Path:
     """
@@ -133,8 +134,18 @@ def sample_data() -> dict:
         "line": "L1",
         "result": "PASS",
         "measurements": [
-            {"item": "길이", "spec": "10±0.1", "measured": Decimal("10.05"), "result": "PASS"},
-            {"item": "폭", "spec": "5±0.1", "measured": Decimal("5.02"), "result": "PASS"},
+            {
+                "item": "길이",
+                "spec": "10±0.1",
+                "measured": Decimal("10.05"),
+                "result": "PASS",
+            },
+            {
+                "item": "폭",
+                "spec": "5±0.1",
+                "measured": Decimal("5.02"),
+                "result": "PASS",
+            },
         ],
     }
 
@@ -142,6 +153,7 @@ def sample_data() -> dict:
 # =============================================================================
 # ExcelRenderer 초기화 테스트
 # =============================================================================
+
 
 class TestExcelRendererInit:
     """ExcelRenderer 초기화 테스트."""
@@ -190,6 +202,7 @@ class TestExcelRendererInit:
 # ExcelRenderer.render 테스트
 # =============================================================================
 
+
 class TestExcelRendererRender:
     """ExcelRenderer.render 테스트."""
 
@@ -211,12 +224,13 @@ class TestExcelRendererRender:
 
         # 렌더링 결과 확인
         from openpyxl import load_workbook
+
         wb = load_workbook(output_path)
         ws = wb.active
 
         # Named Range로 채워진 값 확인
         assert ws["B2"].value == "WO-001"  # WO_NO named range
-        assert ws["B3"].value == "L1"       # LINE named range
+        assert ws["B3"].value == "L1"  # LINE named range
 
         # Cell Address로 채워진 값 확인
         assert ws["B4"].value == "PASS"
@@ -266,11 +280,12 @@ class TestExcelRendererRender:
         renderer.render(sample_data, output_path)
 
         from openpyxl import load_workbook
+
         wb = load_workbook(output_path)
         ws = wb.active
 
         assert ws["B2"].value == "WO-001"  # Named Range
-        assert ws["B3"].value == "L1"       # Cell Address
+        assert ws["B3"].value == "L1"  # Cell Address
 
     def test_measurements_fill(
         self,
@@ -300,8 +315,18 @@ class TestExcelRendererRender:
         data = {
             "wo_no": "WO-001",
             "measurements": [
-                {"item": "길이", "spec": "10±0.1", "measured": Decimal("10.05"), "result": "PASS"},
-                {"item": "폭", "spec": "5±0.1", "measured": Decimal("5.02"), "result": "PASS"},
+                {
+                    "item": "길이",
+                    "spec": "10±0.1",
+                    "measured": Decimal("10.05"),
+                    "result": "PASS",
+                },
+                {
+                    "item": "폭",
+                    "spec": "5±0.1",
+                    "measured": Decimal("5.02"),
+                    "result": "PASS",
+                },
             ],
         }
 
@@ -311,6 +336,7 @@ class TestExcelRendererRender:
         renderer.render(data, output_path)
 
         from openpyxl import load_workbook
+
         wb = load_workbook(output_path)
         ws = wb["검사"]
 
@@ -344,6 +370,7 @@ class TestExcelRendererRender:
         renderer.render(data, output_path)
 
         from openpyxl import load_workbook
+
         wb = load_workbook(output_path)
         ws = wb.active
 
@@ -393,6 +420,7 @@ class TestExcelRendererRender:
         renderer.render(data, output_path)
 
         from openpyxl import load_workbook
+
         wb = load_workbook(output_path)
         ws = wb.active
 
@@ -404,6 +432,7 @@ class TestExcelRendererRender:
 # =============================================================================
 # _validate_manifest 테스트 (충돌 검증)
 # =============================================================================
+
 
 class TestManifestValidation:
     """manifest 검증 테스트."""
@@ -466,6 +495,7 @@ class TestManifestValidation:
 # render_xlsx 간편 함수 테스트
 # =============================================================================
 
+
 class TestRenderXlsx:
     """render_xlsx 간편 함수 테스트."""
 
@@ -493,6 +523,7 @@ class TestRenderXlsx:
 # =============================================================================
 # load_manifest 테스트
 # =============================================================================
+
 
 class TestLoadManifest:
     """load_manifest 함수 테스트."""

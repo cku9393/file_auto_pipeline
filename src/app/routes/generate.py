@@ -46,10 +46,12 @@ api_router = APIRouter()  # API endpoints
 # Page Routes (HTML)
 # =============================================================================
 
+
 @router.get("/jobs", response_class=HTMLResponse)
 async def jobs_page(request: Request) -> HTMLResponse:
     """작업 이력 화면."""
-    return HTMLResponse(content="""
+    return HTMLResponse(
+        content="""
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -74,13 +76,15 @@ async def jobs_page(request: Request) -> HTMLResponse:
     </div>
 </body>
 </html>
-    """)
+    """
+    )
 
 
 @router.get("/jobs/{job_id}", response_class=HTMLResponse)
 async def job_detail_page(request: Request, job_id: str) -> HTMLResponse:
     """작업 상세 화면."""
-    return HTMLResponse(content=f"""
+    return HTMLResponse(
+        content=f"""
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -105,12 +109,14 @@ async def job_detail_page(request: Request, job_id: str) -> HTMLResponse:
     </div>
 </body>
 </html>
-    """)
+    """
+    )
 
 
 # =============================================================================
 # API Routes
 # =============================================================================
+
 
 @api_router.post("")
 async def generate_document(
@@ -256,7 +262,9 @@ async def generate_document(
                         detail=f"사진 슬롯 '{slot_key}' override 사유 검증 실패: {error.message}",
                     )
                 if parsed:
-                    validated_photo_overrides[slot_key] = f"{parsed.code.value}: {parsed.detail}"
+                    validated_photo_overrides[slot_key] = (
+                        f"{parsed.code.value}: {parsed.detail}"
+                    )
 
             # 사진 검증 및 처리
             photo_result = photo_service.validate_and_process(
@@ -273,7 +281,9 @@ async def generate_document(
                     run_log=run_log,
                     code=ErrorCodes.PHOTO_DUPLICATE_AUTO_SELECTED,
                     action_id="photo_processing",
-                    field_or_slot=warning_msg.split("'")[1] if "'" in warning_msg else "unknown",
+                    field_or_slot=warning_msg.split("'")[1]
+                    if "'" in warning_msg
+                    else "unknown",
                     message=warning_msg,
                 )
 
@@ -281,7 +291,9 @@ async def generate_document(
             for log_entry in photo_result.processing_logs:
                 if log_entry.action == "override" and log_entry.override_reason:
                     # override reason 파싱
-                    parsed, _ = validate_override_reason(log_entry.slot_id, log_entry.override_reason)
+                    parsed, _ = validate_override_reason(
+                        log_entry.slot_id, log_entry.override_reason
+                    )
                     if parsed:
                         emit_override(
                             run_log=run_log,
@@ -334,7 +346,9 @@ async def generate_document(
             if not template_dir.exists():
                 error_code = ErrorCodes.TEMPLATE_NOT_FOUND
                 error_context = {"template_id": template_id}
-                raise HTTPException(status_code=404, detail=f"Template '{template_id}' not found")
+                raise HTTPException(
+                    status_code=404, detail=f"Template '{template_id}' not found"
+                )
 
             docx_template = template_dir / "report_template.docx"
             xlsx_template = template_dir / "measurements_template.xlsx"
@@ -361,11 +375,13 @@ async def generate_document(
                     output_path=docx_output,
                 )
 
-                files.append({
-                    "name": OUTPUT_DOCX_FILENAME,
-                    "size": docx_output.stat().st_size,
-                    "path": str(docx_output.relative_to(jobs_root)),
-                })
+                files.append(
+                    {
+                        "name": OUTPUT_DOCX_FILENAME,
+                        "size": docx_output.stat().st_size,
+                        "path": str(docx_output.relative_to(jobs_root)),
+                    }
+                )
 
             # Generate XLSX
             if output_format in ("xlsx", "both"):
@@ -400,11 +416,13 @@ async def generate_document(
                     output_path=xlsx_output,
                 )
 
-                files.append({
-                    "name": OUTPUT_XLSX_FILENAME,
-                    "size": xlsx_output.stat().st_size,
-                    "path": str(xlsx_output.relative_to(jobs_root)),
-                })
+                files.append(
+                    {
+                        "name": OUTPUT_XLSX_FILENAME,
+                        "size": xlsx_output.stat().st_size,
+                        "path": str(xlsx_output.relative_to(jobs_root)),
+                    }
+                )
 
             # 성공!
             success = True
@@ -482,9 +500,9 @@ async def list_jobs(
     for job in jobs:
         html += f"""
         <li>
-            <a href="/jobs/{job['job_id']}">{job['job_id']}</a>
-            <span class="badge">{job['status']}</span>
-            <small>{job['created_at']}</small>
+            <a href="/jobs/{job["job_id"]}">{job["job_id"]}</a>
+            <span class="badge">{job["status"]}</span>
+            <small>{job["created_at"]}</small>
         </li>
         """
     html += "</ul>"

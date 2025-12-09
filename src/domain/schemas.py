@@ -17,6 +17,7 @@ from typing import Any
 # Override Reason Code (품질 검증용)
 # =============================================================================
 
+
 class OverrideReasonCode(str, Enum):
     """
     Override 사유 코드.
@@ -24,21 +25,25 @@ class OverrideReasonCode(str, Enum):
     override가 "면책 버튼"이 되는 것을 방지하기 위해
     구조화된 사유 코드를 강제합니다.
     """
-    MISSING_PHOTO = "MISSING_PHOTO"           # 사진 누락
-    DATA_UNAVAILABLE = "DATA_UNAVAILABLE"     # 데이터 미제공
-    CUSTOMER_REQUEST = "CUSTOMER_REQUEST"     # 고객 요청
-    DEVICE_FAILURE = "DEVICE_FAILURE"         # 장비 고장
-    OCR_UNREADABLE = "OCR_UNREADABLE"         # OCR 인식 불가
+
+    MISSING_PHOTO = "MISSING_PHOTO"  # 사진 누락
+    DATA_UNAVAILABLE = "DATA_UNAVAILABLE"  # 데이터 미제공
+    CUSTOMER_REQUEST = "CUSTOMER_REQUEST"  # 고객 요청
+    DEVICE_FAILURE = "DEVICE_FAILURE"  # 장비 고장
+    OCR_UNREADABLE = "OCR_UNREADABLE"  # OCR 인식 불가
     FIELD_NOT_APPLICABLE = "FIELD_NOT_APPLICABLE"  # 해당 필드 미적용
-    OTHER = "OTHER"                           # 기타 (detail 필수)
+    OTHER = "OTHER"  # 기타 (detail 필수)
+
 
 # =============================================================================
 # Core Schemas
 # =============================================================================
 
+
 @dataclass
 class MeasurementRow:
     """측정 데이터 행."""
+
     item: str
     spec: str
     measured: Decimal  # float 금지, Decimal 사용
@@ -55,6 +60,7 @@ class NormalizedPacket:
     - wo_no, line, part_no, lot, result (critical)
     - inspector, date, remark (reference)
     """
+
     # === Critical Fields (override_allowed=false) ===
     wo_no: str
     line: str
@@ -98,9 +104,11 @@ class NormalizedPacket:
 # Photo Schemas
 # =============================================================================
 
+
 @dataclass
 class PhotoSlot:
     """사진 슬롯 정보."""
+
     key: str  # overview, label_serial, etc.
     basename: str  # 01_overview, 02_label_serial, etc.
     required: bool
@@ -119,9 +127,10 @@ class SlotMatchConfidence(str, Enum):
 
     자동 매칭이 틀리면 조용히 잘못된 문서가 나오는 문제를 방지.
     """
-    HIGH = "high"          # 정확한 basename 매칭 + (선택) OCR 키워드 확인됨
-    MEDIUM = "medium"      # basename 매칭만 됨, 핵심 슬롯은 경고 권장
-    LOW = "low"            # 부분 매칭, 사용자 확인 필요
+
+    HIGH = "high"  # 정확한 basename 매칭 + (선택) OCR 키워드 확인됨
+    MEDIUM = "medium"  # basename 매칭만 됨, 핵심 슬롯은 경고 권장
+    LOW = "low"  # 부분 매칭, 사용자 확인 필요
     AMBIGUOUS = "ambiguous"  # 여러 슬롯에 매칭 가능, fail-fast 또는 사용자 확인
 
 
@@ -133,6 +142,7 @@ class SlotMatchResult:
     자동 매칭 시 confidence와 함께 반환하여
     모호한 매칭을 감지하고 사용자 확인을 유도.
     """
+
     slot: PhotoSlot | None
     confidence: SlotMatchConfidence
     matched_by: str = ""  # "basename_exact", "basename_prefix", "key_prefix"
@@ -148,7 +158,10 @@ class SlotMatchResult:
     @property
     def needs_user_confirmation(self) -> bool:
         """사용자 확인이 필요한지."""
-        return self.confidence in (SlotMatchConfidence.LOW, SlotMatchConfidence.AMBIGUOUS)
+        return self.confidence in (
+            SlotMatchConfidence.LOW,
+            SlotMatchConfidence.AMBIGUOUS,
+        )
 
 
 @dataclass
@@ -158,6 +171,7 @@ class PhotoProcessingLog:
 
     run log에 photo_processing 배열로 기록됨.
     """
+
     slot_id: str
     action: str  # mapped, skipped, archived, override
     raw_path: str | None = None  # 원본 파일 경로
@@ -187,6 +201,7 @@ class MoveResult:
 
     AGENTS.md 규칙: 원인 보존, dst 충돌 해결, 원자성, fsync 경고
     """
+
     success: bool
     src: Path
     dst: Path | None = None
@@ -200,6 +215,7 @@ class MoveResult:
 # Override/Logging Schemas
 # =============================================================================
 
+
 @dataclass
 class OverrideLog:
     """
@@ -209,6 +225,7 @@ class OverrideLog:
 
     reason 필드는 호환성을 위해 "CODE: detail" 형태로 유지됩니다.
     """
+
     code: str  # OVERRIDE_APPLIED
     timestamp: str  # ISO 8601
     field_or_slot: str
@@ -239,6 +256,7 @@ class WarningLog:
     경고 필수 컨텍스트: level, code, action_id, field_or_slot,
                        original_value, resolved_value, message
     """
+
     level: str = "warning"
     code: str = ""
     action_id: str = ""
@@ -266,6 +284,7 @@ class RunLog:
 
     job/run 단위 실행 결과 및 메타데이터.
     """
+
     run_id: str
     job_id: str
     started_at: str  # ISO 8601
@@ -308,9 +327,11 @@ class RunLog:
 # Intake Session Schema (app/services/intake.py에서 사용)
 # =============================================================================
 
+
 @dataclass
 class IntakeAttachment:
     """업로드된 파일 정보."""
+
     filename: str
     size: int
     path: str  # uploads/... 상대 경로
@@ -319,6 +340,7 @@ class IntakeAttachment:
 @dataclass
 class IntakeMessage:
     """채팅 메시지."""
+
     role: str  # user, assistant
     content: str
     timestamp: str  # ISO 8601
@@ -328,6 +350,7 @@ class IntakeMessage:
 @dataclass
 class OCRResult:
     """OCR 결과."""
+
     success: bool
     text: str | None = None
     confidence: float | None = None
@@ -341,6 +364,7 @@ class OCRResult:
 @dataclass
 class ExtractionResult:
     """LLM 추출 결과."""
+
     fields: dict[str, Any] = field(default_factory=dict)
     measurements: list[dict[str, Any]] = field(default_factory=list)
     missing_fields: list[str] = field(default_factory=list)
@@ -355,6 +379,7 @@ class ExtractionResult:
 @dataclass
 class UserCorrection:
     """사용자 수정 기록."""
+
     field: str
     original: Any | None
     corrected: Any
@@ -365,6 +390,7 @@ class UserCorrection:
 @dataclass
 class PhotoMapping:
     """사진 슬롯 매핑 정보."""
+
     slot_key: str
     filename: str
     raw_path: str
@@ -384,13 +410,16 @@ class IntakeSession:
     Note: ocr_results와 extraction_result는 providers.base의 타입도 허용합니다.
     (구조적으로 동일하지만 별도 모듈에 정의됨)
     """
+
     schema_version: str = "1.0"
     session_id: str = ""
     created_at: str = ""
     immutable: bool = True
 
     messages: list[IntakeMessage] = field(default_factory=list)
-    ocr_results: dict[str, Any] = field(default_factory=dict)  # OCRResult or providers.base.OCRResult
+    ocr_results: dict[str, Any] = field(
+        default_factory=dict
+    )  # OCRResult or providers.base.OCRResult
     extraction_result: Any = None  # ExtractionResult or providers.base.ExtractionResult
     user_corrections: list[UserCorrection] = field(default_factory=list)
     photo_mappings: list[PhotoMapping] = field(default_factory=list)  # 사진 슬롯 매핑

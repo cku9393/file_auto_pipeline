@@ -37,15 +37,15 @@ try:
     )
 
     FALLBACK_ERRORS = (
-        NotFound,           # 모델명 오류/미지원
+        NotFound,  # 모델명 오류/미지원
         ServiceUnavailable,  # 5xx
-        ResourceExhausted,   # 429 쿼터/레이트리밋
+        ResourceExhausted,  # 429 쿼터/레이트리밋
     )
 
     REJECT_IMMEDIATELY = (
-        InvalidArgument,    # 입력 오류
-        PermissionDenied,   # 인증 오류
-        Unauthenticated,    # API 키 오류
+        InvalidArgument,  # 입력 오류
+        PermissionDenied,  # 인증 오류
+        Unauthenticated,  # API 키 오류
     )
 except ImportError:
     pass
@@ -85,6 +85,7 @@ class GeminiOCRProvider(OCRProvider):
         if self._client is None:
             try:
                 import google.generativeai as genai
+
                 genai.configure(api_key=self.api_key)
                 self._client = genai
             except ImportError as e:
@@ -190,10 +191,7 @@ class GeminiOCRProvider(OCRProvider):
                     "GOOGLE_API_KEY 환경변수를 확인해주세요."
                 )
             elif isinstance(error, PermissionDenied):
-                return (
-                    "이 작업을 수행할 권한이 없습니다. "
-                    "API 키의 권한을 확인해주세요."
-                )
+                return "이 작업을 수행할 권한이 없습니다. API 키의 권한을 확인해주세요."
             elif isinstance(error, ResourceExhausted):
                 return (
                     "API 사용량 한도를 초과했습니다. "

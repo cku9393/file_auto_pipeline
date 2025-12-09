@@ -20,6 +20,7 @@ from src.core.ids import (
 # generate_job_id 테스트
 # =============================================================================
 
+
 class TestGenerateJobId:
     """generate_job_id 함수 테스트."""
 
@@ -109,6 +110,7 @@ class TestGenerateJobId:
 # generate_run_id 테스트
 # =============================================================================
 
+
 class TestGenerateRunId:
     """generate_run_id 함수 테스트."""
 
@@ -144,9 +146,7 @@ class TestGenerateRunId:
         assert timestamp_part.isdigit()
 
         # 타임스탬프가 before~after 범위 내 (UTC 기준)
-        run_time = datetime.strptime(timestamp_part, "%Y%m%d%H%M%S").replace(
-            tzinfo=UTC
-        )
+        run_time = datetime.strptime(timestamp_part, "%Y%m%d%H%M%S").replace(tzinfo=UTC)
         assert before.replace(microsecond=0) <= run_time <= after.replace(microsecond=0)
 
     def test_safe_for_filename(self):
@@ -160,6 +160,7 @@ class TestGenerateRunId:
 # =============================================================================
 # _sanitize_for_id 테스트
 # =============================================================================
+
 
 class TestSanitizeForId:
     """_sanitize_for_id 헬퍼 함수 테스트."""

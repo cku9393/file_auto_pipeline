@@ -116,10 +116,8 @@ class DocxRenderer:
             "inspector": data.get("inspector", ""),
             "date": data.get("date", ""),
             "remark": data.get("remark", ""),
-
             # 측정 데이터
             "measurements": data.get("measurements", []),
-
             # 메타데이터
             "generated_at": datetime.now(UTC).isoformat(),
         }

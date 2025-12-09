@@ -31,6 +31,7 @@ from src.render.word import DocxRenderer
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def pipeline_root(tmp_path: Path) -> Path:
     """파이프라인 루트 디렉터리 설정."""
@@ -171,6 +172,7 @@ def sample_photos(pipeline_root: Path) -> dict[str, Path]:
 # 1. Job 생성 및 SSOT 테스트
 # =============================================================================
 
+
 class TestJobCreationFlow:
     """Job 생성 흐름 테스트."""
 
@@ -228,6 +230,7 @@ class TestJobCreationFlow:
 # 2. Validation 흐름 테스트
 # =============================================================================
 
+
 class TestValidationFlow:
     """검증 흐름 테스트."""
 
@@ -266,6 +269,7 @@ class TestValidationFlow:
 # =============================================================================
 # 3. Photos 흐름 테스트
 # =============================================================================
+
 
 class TestPhotosFlow:
     """사진 처리 흐름 테스트."""
@@ -315,12 +319,15 @@ class TestPhotosFlow:
 # 4. Hashing 흐름 테스트
 # =============================================================================
 
+
 class TestHashingFlow:
     """해시 생성 흐름 테스트."""
 
     def test_packet_hash_reproducibility(self, sample_packet, definition_path):
         """패킷 해시 재현성."""
-        config = {"pipeline": {"hash_fields": ["wo_no", "line", "part_no", "lot", "result"]}}
+        config = {
+            "pipeline": {"hash_fields": ["wo_no", "line", "part_no", "lot", "result"]}
+        }
 
         hash1 = compute_packet_hash(sample_packet, config, definition_path)
         hash2 = compute_packet_hash(sample_packet, config, definition_path)
@@ -329,7 +336,9 @@ class TestHashingFlow:
 
     def test_packet_hash_changes_on_data_change(self, sample_packet, definition_path):
         """데이터 변경 시 해시 변경."""
-        config = {"pipeline": {"hash_fields": ["wo_no", "line", "part_no", "lot", "result"]}}
+        config = {
+            "pipeline": {"hash_fields": ["wo_no", "line", "part_no", "lot", "result"]}
+        }
 
         hash1 = compute_packet_hash(sample_packet, config, definition_path)
 
@@ -343,6 +352,7 @@ class TestHashingFlow:
 # =============================================================================
 # 5. Render 흐름 테스트
 # =============================================================================
+
 
 class TestRenderFlow:
     """렌더링 흐름 테스트."""
@@ -386,6 +396,7 @@ class TestRenderFlow:
 
         # 내용 확인
         from openpyxl import load_workbook
+
         wb = load_workbook(result)
         ws = wb["검사"]
 
@@ -397,6 +408,7 @@ class TestRenderFlow:
 # =============================================================================
 # 6. 전체 파이프라인 흐름 테스트
 # =============================================================================
+
 
 class TestFullPipelineFlow:
     """전체 파이프라인 통합 테스트."""
@@ -495,9 +507,15 @@ class TestFullPipelineFlow:
         xlsx_output = job_dir / "deliverables" / "measurements.xlsx"
 
         DocxRenderer(docx_template).render(sample_packet, docx_output)
-        ExcelRenderer(xlsx_template, {
-            "xlsx_mappings": {"named_ranges": {"wo_no": "WO_NO"}, "cell_addresses": {}},
-        }).render(sample_packet, xlsx_output)
+        ExcelRenderer(
+            xlsx_template,
+            {
+                "xlsx_mappings": {
+                    "named_ranges": {"wo_no": "WO_NO"},
+                    "cell_addresses": {},
+                },
+            },
+        ).render(sample_packet, xlsx_output)
 
         # 검증
         deliverables = list((job_dir / "deliverables").iterdir())
@@ -509,6 +527,7 @@ class TestFullPipelineFlow:
 # =============================================================================
 # 7. 오류 상황 테스트
 # =============================================================================
+
 
 class TestPipelineErrorScenarios:
     """파이프라인 오류 상황 테스트."""

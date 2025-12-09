@@ -75,6 +75,7 @@ photos:
 # TC1: 정상 매핑
 # =============================================================================
 
+
 class TestPhotoUploadMapsToSlot:
     """TC1: 이미지 업로드 → slot 자동 매핑 → derived 생성."""
 
@@ -133,6 +134,7 @@ class TestPhotoUploadMapsToSlot:
 # TC2: derived 교체 + 아카이브
 # =============================================================================
 
+
 class TestPhotoReplacesExistingDerived:
     """TC2: 기존 derived 있는 상태에서 새 사진 업로드."""
 
@@ -182,6 +184,7 @@ class TestPhotoReplacesExistingDerived:
 # TC3: 필수 슬롯 누락 - fail-fast
 # =============================================================================
 
+
 class TestMissingRequiredPhotoRejects:
     """TC3: required=true, override_allowed=false 슬롯 누락."""
 
@@ -206,13 +209,16 @@ class TestMissingRequiredPhotoRejects:
 
         result = service.validate_and_process()
 
-        missing_logs = [log for log in result.processing_logs if log.action == "missing"]
+        missing_logs = [
+            log for log in result.processing_logs if log.action == "missing"
+        ]
         assert len(missing_logs) >= 2  # overview, label_serial
 
 
 # =============================================================================
 # TC4: 필수 슬롯 누락 - override 허용
 # =============================================================================
+
 
 class TestMissingPhotoWithValidOverride:
     """TC4: required=true, override_allowed=true 슬롯 누락 + 유효한 override."""
@@ -236,9 +242,7 @@ class TestMissingPhotoWithValidOverride:
 
         assert result.valid
 
-    def test_override_logged_in_processing(
-        self, job_dir: Path, definition_path: Path
-    ):
+    def test_override_logged_in_processing(self, job_dir: Path, definition_path: Path):
         """override 시 action='override' 로그."""
         service = PhotoService(job_dir, definition_path)
 
@@ -251,7 +255,9 @@ class TestMissingPhotoWithValidOverride:
             }
         )
 
-        override_logs = [log for log in result.processing_logs if log.action == "override"]
+        override_logs = [
+            log for log in result.processing_logs if log.action == "override"
+        ]
         assert len(override_logs) == 1
         assert override_logs[0].slot_id == "measurement_setup"
         assert override_logs[0].override_reason is not None
@@ -275,6 +281,7 @@ class TestMissingPhotoWithValidOverride:
 # =============================================================================
 # TC5: 중복 사진 처리
 # =============================================================================
+
 
 class TestDuplicatePhotosSelectsByPreferOrder:
     """TC5: 동일 슬롯에 여러 사진 매칭 시 prefer_order 기준 선택."""
@@ -312,6 +319,7 @@ class TestDuplicatePhotosSelectsByPreferOrder:
 # =============================================================================
 # TC6: run log에 photo_processing 기록
 # =============================================================================
+
 
 class TestRunLogIncludesPhotoProcessing:
     """TC6: generate 완료 후 run log에 photo_processing 배열."""
@@ -371,6 +379,7 @@ class TestRunLogIncludesPhotoProcessing:
 # 추가 테스트: 슬롯 매핑 상태 조회
 # =============================================================================
 
+
 class TestGetSlotMappingStatus:
     """슬롯 매핑 상태 조회."""
 
@@ -418,6 +427,7 @@ class TestGetSlotMappingStatus:
 # TC7: 슬롯 매칭 Confidence 테스트
 # =============================================================================
 
+
 class TestSlotMatchingConfidence:
     """슬롯 매칭 신뢰도 테스트."""
 
@@ -433,7 +443,9 @@ class TestSlotMatchingConfidence:
         assert result.matched_by == "basename_exact"
         assert result.is_reliable is True
 
-    def test_basename_prefix_match_is_medium(self, job_dir: Path, definition_path: Path):
+    def test_basename_prefix_match_is_medium(
+        self, job_dir: Path, definition_path: Path
+    ):
         """basename prefix 매칭 → MEDIUM confidence."""
         service = PhotoService(job_dir, definition_path)
 
@@ -459,7 +471,9 @@ class TestSlotMatchingConfidence:
         assert result.matched_by == "key_prefix"
         assert result.needs_user_confirmation is True
 
-    def test_no_match_returns_low_with_warning(self, job_dir: Path, definition_path: Path):
+    def test_no_match_returns_low_with_warning(
+        self, job_dir: Path, definition_path: Path
+    ):
         """매칭 없음 → LOW + 경고."""
         service = PhotoService(job_dir, definition_path)
 
@@ -470,7 +484,9 @@ class TestSlotMatchingConfidence:
         assert result.warning is not None
         assert "매칭되는 슬롯 없음" in result.warning
 
-    def test_critical_slot_low_match_has_warning(self, job_dir: Path, definition_path: Path):
+    def test_critical_slot_low_match_has_warning(
+        self, job_dir: Path, definition_path: Path
+    ):
         """핵심 슬롯이 LOW로 매칭되면 경고 발생."""
         service = PhotoService(job_dir, definition_path)
 
@@ -482,7 +498,9 @@ class TestSlotMatchingConfidence:
         assert result.warning is not None
         assert "핵심 슬롯" in result.warning
 
-    def test_ocr_verification_upgrades_confidence(self, job_dir: Path, definition_path: Path):
+    def test_ocr_verification_upgrades_confidence(
+        self, job_dir: Path, definition_path: Path
+    ):
         """OCR 키워드 발견 시 신뢰도 상승."""
         service = PhotoService(job_dir, definition_path)
 

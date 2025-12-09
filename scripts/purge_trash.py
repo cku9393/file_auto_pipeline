@@ -48,6 +48,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class TrashRetentionConfig:
     """_trash 보관 정책 설정."""
+
     retention_days: int = 30
     max_size_per_job_mb: int = 100
     max_total_size_gb: int = 10
@@ -59,6 +60,7 @@ class TrashRetentionConfig:
 @dataclass
 class PurgeResult:
     """Purge 결과."""
+
     scanned_jobs: int = 0
     scanned_folders: int = 0
     scanned_files: int = 0
@@ -238,7 +240,10 @@ def purge_job_trash(
     remaining_folders = [f for f in folders if f not in purge_candidates]
     remaining_size = sum(get_folder_size(f) for f in remaining_folders)
 
-    while remaining_size > max_size_bytes and len(remaining_folders) > config.min_keep_count:
+    while (
+        remaining_size > max_size_bytes
+        and len(remaining_folders) > config.min_keep_count
+    ):
         oldest = remaining_folders.pop(0)  # 가장 오래된 것
         purge_candidates.append(oldest)
         remaining_size -= get_folder_size(oldest)
@@ -276,7 +281,9 @@ def purge_all_jobs(
             logger.error(f"job 디렉터리 없음: {job_dirs[0]}")
             return result
     else:
-        job_dirs = [d for d in jobs_root.iterdir() if d.is_dir() and d.name.startswith("JOB-")]
+        job_dirs = [
+            d for d in jobs_root.iterdir() if d.is_dir() and d.name.startswith("JOB-")
+        ]
 
     logger.info(f"스캔 대상 job: {len(job_dirs)}개")
 
@@ -342,7 +349,9 @@ def main():
 
     # 설정 로드
     config = load_retention_config(definition_path)
-    logger.info(f"보관 정책: {config.retention_days}일, job당 {config.max_size_per_job_mb}MB, 모드: {config.purge_mode}")
+    logger.info(
+        f"보관 정책: {config.retention_days}일, job당 {config.max_size_per_job_mb}MB, 모드: {config.purge_mode}"
+    )
 
     if not args.execute:
         logger.info("=" * 50)
@@ -361,8 +370,12 @@ def main():
     # 결과 출력
     logger.info("=" * 50)
     logger.info("Purge 결과:")
-    logger.info(f"  스캔: {result.scanned_jobs} jobs, {result.scanned_folders} folders, {result.scanned_files} files ({result.scanned_size_mb:.2f} MB)")
-    logger.info(f"  정리: {result.purged_folders} folders, {result.purged_files} files ({result.purged_size_mb:.2f} MB)")
+    logger.info(
+        f"  스캔: {result.scanned_jobs} jobs, {result.scanned_folders} folders, {result.scanned_files} files ({result.scanned_size_mb:.2f} MB)"
+    )
+    logger.info(
+        f"  정리: {result.purged_folders} folders, {result.purged_files} files ({result.purged_size_mb:.2f} MB)"
+    )
     if config.purge_mode == "compress":
         logger.info(f"  압축: {result.compressed_archives} archives")
     if result.errors:

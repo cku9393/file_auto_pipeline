@@ -22,6 +22,7 @@ from src.app.main import app
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def client():
     """FastAPI TestClient."""
@@ -44,6 +45,7 @@ def sample_xlsx() -> bytes:
 # =============================================================================
 # Page Routes (HTML)
 # =============================================================================
+
 
 class TestTemplatesPage:
     """템플릿 관리 페이지 테스트."""
@@ -101,6 +103,7 @@ class TestRegisterPage:
 # GET /api/templates
 # =============================================================================
 
+
 class TestListTemplates:
     """템플릿 목록 API 테스트."""
 
@@ -127,6 +130,7 @@ class TestListTemplates:
 # =============================================================================
 # POST /api/templates
 # =============================================================================
+
 
 class TestCreateTemplate:
     """템플릿 생성 API 테스트."""
@@ -159,7 +163,11 @@ class TestCreateTemplate:
                 "doc_type": "inspection",
             },
             files={
-                "example_docx": ("template.docx", io.BytesIO(sample_docx), "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+                "example_docx": (
+                    "template.docx",
+                    io.BytesIO(sample_docx),
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                ),
             },
         )
 
@@ -177,7 +185,11 @@ class TestCreateTemplate:
                 "doc_type": "inspection",
             },
             files={
-                "example_xlsx": ("template.xlsx", io.BytesIO(sample_xlsx), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+                "example_xlsx": (
+                    "template.xlsx",
+                    io.BytesIO(sample_xlsx),
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                ),
             },
         )
 
@@ -195,8 +207,16 @@ class TestCreateTemplate:
                 "doc_type": "inspection",
             },
             files={
-                "example_docx": ("template.docx", io.BytesIO(sample_docx), "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
-                "example_xlsx": ("template.xlsx", io.BytesIO(sample_xlsx), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+                "example_docx": (
+                    "template.docx",
+                    io.BytesIO(sample_docx),
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                ),
+                "example_xlsx": (
+                    "template.xlsx",
+                    io.BytesIO(sample_xlsx),
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                ),
             },
         )
 
@@ -223,6 +243,7 @@ class TestCreateTemplate:
 # =============================================================================
 # GET /api/templates/{template_id}
 # =============================================================================
+
 
 class TestGetTemplate:
     """템플릿 상세 조회 API 테스트."""
@@ -251,6 +272,7 @@ class TestGetTemplate:
 # =============================================================================
 # PATCH /api/templates/{template_id}
 # =============================================================================
+
 
 class TestUpdateTemplateStatus:
     """템플릿 상태 변경 API 테스트."""
@@ -296,6 +318,7 @@ class TestUpdateTemplateStatus:
 # DELETE /api/templates/{template_id}
 # =============================================================================
 
+
 class TestDeleteTemplate:
     """템플릿 삭제 API 테스트."""
 
@@ -322,6 +345,7 @@ class TestDeleteTemplate:
 # =============================================================================
 # Error Cases
 # =============================================================================
+
 
 class TestTemplatesErrorCases:
     """에러 케이스 테스트."""
@@ -366,6 +390,7 @@ class TestTemplatesErrorCases:
 # Template ID Validation (현재 미구현 - 향후 추가)
 # =============================================================================
 
+
 class TestTemplateIdValidation:
     """템플릿 ID 유효성 검증 테스트."""
 
@@ -400,6 +425,7 @@ class TestTemplateIdValidation:
 # =============================================================================
 # Doc Types
 # =============================================================================
+
 
 class TestDocTypes:
     """문서 타입 테스트."""

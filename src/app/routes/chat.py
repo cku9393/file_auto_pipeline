@@ -53,6 +53,7 @@ def get_or_create_intake(request: Request, session_id: str) -> IntakeService:
 # Page Routes (HTML)
 # =============================================================================
 
+
 @router.get("/chat", response_class=HTMLResponse)
 async def chat_page(request: Request) -> HTMLResponse:
     """
@@ -60,7 +61,8 @@ async def chat_page(request: Request) -> HTMLResponse:
 
     TODO: Jinja2 템플릿으로 렌더링
     """
-    return HTMLResponse(content="""
+    return HTMLResponse(
+        content="""
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -109,12 +111,14 @@ async def chat_page(request: Request) -> HTMLResponse:
     <script src="/static/js/app.js"></script>
 </body>
 </html>
-    """)
+    """
+    )
 
 
 # =============================================================================
 # API Routes
 # =============================================================================
+
 
 @api_router.get("/stream")
 async def chat_stream(
@@ -126,6 +130,7 @@ async def chat_stream(
 
     HTMX hx-sse 연동용.
     """
+
     async def event_generator() -> AsyncGenerator[str, None]:
         """SSE 이벤트 생성기."""
         # 연결 유지
@@ -349,14 +354,13 @@ async def extract_fields(
     session = intake.load_session()
 
     # 모든 메시지 수집
-    user_messages = [
-        m.content for m in session.messages if m.role == "user"
-    ]
+    user_messages = [m.content for m in session.messages if m.role == "user"]
     user_input = "\n".join(user_messages)
 
     # OCR 결과 수집
     ocr_texts = [
-        result.text for result in session.ocr_results.values()
+        result.text
+        for result in session.ocr_results.values()
         if result.success and result.text
     ]
     ocr_text = "\n".join(ocr_texts) if ocr_texts else None

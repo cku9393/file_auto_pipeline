@@ -21,6 +21,7 @@ from src.domain.errors import ErrorCodes, PolicyRejectError
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def job_dir(tmp_path: Path) -> Path:
     """테스트용 job 디렉터리."""
@@ -48,6 +49,7 @@ def session_with_messages(intake_service: IntakeService):
 # 세션 생성/로드 테스트
 # =============================================================================
 
+
 class TestSessionCreation:
     """세션 생성 테스트."""
 
@@ -60,7 +62,9 @@ class TestSessionCreation:
         assert session.created_at is not None
         assert session.immutable is True
 
-    def test_creates_directory_structure(self, intake_service: IntakeService, job_dir: Path):
+    def test_creates_directory_structure(
+        self, intake_service: IntakeService, job_dir: Path
+    ):
         """디렉터리 구조 생성."""
         intake_service.create_session()
 
@@ -112,6 +116,7 @@ class TestSessionCreation:
 # =============================================================================
 # 메시지 추가 테스트 (Append-Only)
 # =============================================================================
+
 
 class TestAddMessage:
     """메시지 추가 테스트."""
@@ -173,11 +178,13 @@ class TestAddMessage:
         intake_service.create_session()
 
         intake_service.add_message(
-            "user", "First",
+            "user",
+            "First",
             attachments=[("file.jpg", b"data1")],
         )
         message = intake_service.add_message(
-            "user", "Second",
+            "user",
+            "Second",
             attachments=[("file.jpg", b"data2")],
         )
 
@@ -188,6 +195,7 @@ class TestAddMessage:
 # =============================================================================
 # OCR 결과 추가 테스트
 # =============================================================================
+
 
 class TestAddOCRResult:
     """OCR 결과 추가 테스트."""
@@ -248,6 +256,7 @@ class TestAddOCRResult:
 # =============================================================================
 # Extraction 결과 추가 테스트 (불변성)
 # =============================================================================
+
 
 class TestAddExtractionResult:
     """Extraction 결과 추가 테스트."""
@@ -312,6 +321,7 @@ class TestAddExtractionResult:
 # 사용자 수정 테스트
 # =============================================================================
 
+
 class TestAddUserCorrection:
     """사용자 수정 기록 테스트."""
 
@@ -360,6 +370,7 @@ class TestAddUserCorrection:
 # 최종 필드 계산 테스트
 # =============================================================================
 
+
 class TestGetFinalFields:
     """get_final_fields 테스트."""
 
@@ -374,11 +385,13 @@ class TestGetFinalFields:
     def test_returns_extraction_fields(self, intake_service: IntakeService):
         """추출 결과 반환."""
         intake_service.create_session()
-        intake_service.add_extraction_result(ExtractionResult(
-            success=True,
-            fields={"wo_no": "WO-001", "line": "L1"},
-            model_used="claude-opus-4-5-20251101",
-        ))
+        intake_service.add_extraction_result(
+            ExtractionResult(
+                success=True,
+                fields={"wo_no": "WO-001", "line": "L1"},
+                model_used="claude-opus-4-5-20251101",
+            )
+        )
 
         fields = intake_service.get_final_fields()
 
@@ -388,11 +401,13 @@ class TestGetFinalFields:
     def test_applies_user_corrections(self, intake_service: IntakeService):
         """사용자 수정 적용."""
         intake_service.create_session()
-        intake_service.add_extraction_result(ExtractionResult(
-            success=True,
-            fields={"wo_no": "WO-001", "line": "L1"},
-            model_used="claude-opus-4-5-20251101",
-        ))
+        intake_service.add_extraction_result(
+            ExtractionResult(
+                success=True,
+                fields={"wo_no": "WO-001", "line": "L1"},
+                model_used="claude-opus-4-5-20251101",
+            )
+        )
         intake_service.add_user_correction("wo_no", "WO-001", "WO-001A")
 
         fields = intake_service.get_final_fields()
@@ -403,11 +418,13 @@ class TestGetFinalFields:
     def test_latest_correction_wins(self, intake_service: IntakeService):
         """최신 수정이 적용됨."""
         intake_service.create_session()
-        intake_service.add_extraction_result(ExtractionResult(
-            success=True,
-            fields={"wo_no": "WO-001"},
-            model_used="claude-opus-4-5-20251101",
-        ))
+        intake_service.add_extraction_result(
+            ExtractionResult(
+                success=True,
+                fields={"wo_no": "WO-001"},
+                model_used="claude-opus-4-5-20251101",
+            )
+        )
         intake_service.add_user_correction("wo_no", "WO-001", "WO-001A")
         intake_service.add_user_correction("wo_no", "WO-001A", "WO-001B")
 
@@ -419,6 +436,7 @@ class TestGetFinalFields:
 # =============================================================================
 # 직렬화/역직렬화 테스트
 # =============================================================================
+
 
 class TestSerialization:
     """세션 직렬화 테스트."""
@@ -439,14 +457,16 @@ class TestSerialization:
         """전체 라운드트립 테스트."""
         intake_service.create_session()
         intake_service.add_message("user", "입력", attachments=[("f.txt", b"data")])
-        intake_service.add_ocr_result("img.jpg", OCRResult(
-            success=True, text="OCR text", model_used="gemini"
-        ))
-        intake_service.add_extraction_result(ExtractionResult(
-            success=True,
-            fields={"wo_no": "WO-001"},
-            model_used="claude",
-        ))
+        intake_service.add_ocr_result(
+            "img.jpg", OCRResult(success=True, text="OCR text", model_used="gemini")
+        )
+        intake_service.add_extraction_result(
+            ExtractionResult(
+                success=True,
+                fields={"wo_no": "WO-001"},
+                model_used="claude",
+            )
+        )
         intake_service.add_user_correction("wo_no", "WO-001", "WO-002")
 
         # 새 서비스로 로드

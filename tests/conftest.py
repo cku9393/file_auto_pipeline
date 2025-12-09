@@ -18,6 +18,7 @@ import yaml
 # Path Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def project_root() -> Path:
     """프로젝트 루트 경로."""
@@ -46,6 +47,7 @@ def default_config(default_config_path: Path) -> dict:
 # =============================================================================
 # Job Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def sample_pass_job(tmp_path: Path) -> Generator[Path, None, None]:
@@ -139,6 +141,7 @@ def sample_packet_missing_critical() -> dict:
 # Config Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def test_config() -> dict:
     """테스트용 설정."""
@@ -160,6 +163,7 @@ def test_config() -> dict:
 # Browser Test Fixtures
 # =============================================================================
 
+
 @pytest.fixture(scope="session")
 def live_server() -> Generator[str, None, None]:
     """
@@ -180,6 +184,7 @@ def live_server() -> Generator[str, None, None]:
 
     def run_server() -> None:
         import asyncio
+
         asyncio.run(server.serve())
 
     thread = threading.Thread(target=run_server, daemon=True)
@@ -191,6 +196,7 @@ def live_server() -> Generator[str, None, None]:
     for _ in range(max_attempts):
         try:
             import httpx
+
             response = httpx.get(f"{base_url}/health", timeout=1.0)
             if response.status_code == 200:
                 break

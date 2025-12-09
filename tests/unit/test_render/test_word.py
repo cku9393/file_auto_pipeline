@@ -18,6 +18,7 @@ from src.render.word import DocxRenderer, render_docx
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def simple_docx_template(tmp_path: Path) -> Path:
     """
@@ -90,6 +91,7 @@ def sample_render_data() -> dict:
 # DocxRenderer 초기화 테스트
 # =============================================================================
 
+
 class TestDocxRendererInit:
     """DocxRenderer 초기화 테스트."""
 
@@ -114,6 +116,7 @@ class TestDocxRendererInit:
 # =============================================================================
 # DocxRenderer.render 테스트
 # =============================================================================
+
 
 class TestDocxRendererRender:
     """DocxRenderer.render 테스트."""
@@ -235,6 +238,7 @@ class TestDocxRendererRender:
 # DocxRenderer.get_placeholders 테스트
 # =============================================================================
 
+
 class TestDocxRendererGetPlaceholders:
     """DocxRenderer.get_placeholders 테스트."""
 
@@ -265,6 +269,7 @@ class TestDocxRendererGetPlaceholders:
 # =============================================================================
 # render_docx 간편 함수 테스트
 # =============================================================================
+
 
 class TestRenderDocx:
     """render_docx 간편 함수 테스트."""

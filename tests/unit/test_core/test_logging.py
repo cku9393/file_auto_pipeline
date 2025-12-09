@@ -23,6 +23,7 @@ from src.core.logging import (
 # create_run_log 테스트
 # =============================================================================
 
+
 class TestCreateRunLog:
     """create_run_log 함수 테스트."""
 
@@ -54,6 +55,7 @@ class TestCreateRunLog:
 # =============================================================================
 # emit_warning 테스트
 # =============================================================================
+
 
 class TestEmitWarning:
     """emit_warning 함수 테스트."""
@@ -117,6 +119,7 @@ class TestEmitWarning:
 # emit_override 테스트
 # =============================================================================
 
+
 class TestEmitOverride:
     """emit_override 함수 테스트."""
 
@@ -147,7 +150,9 @@ class TestEmitOverride:
         run_log = create_run_log("JOB-001")
 
         before = datetime.now(UTC)
-        emit_override(run_log, "field", "field", "OTHER", "상세 사유 테스트입니다", "user")
+        emit_override(
+            run_log, "field", "field", "OTHER", "상세 사유 테스트입니다", "user"
+        )
         after = datetime.now(UTC)
 
         override = run_log.overrides[0]
@@ -157,7 +162,9 @@ class TestEmitOverride:
     def test_override_code_applied(self):
         """override 코드는 OVERRIDE_APPLIED."""
         run_log = create_run_log("JOB-001")
-        emit_override(run_log, "field", "field", "MISSING_PHOTO", "사진 누락 사유", "user")
+        emit_override(
+            run_log, "field", "field", "MISSING_PHOTO", "사진 누락 사유", "user"
+        )
 
         assert run_log.overrides[0].code == "OVERRIDE_APPLIED"
 
@@ -165,6 +172,7 @@ class TestEmitOverride:
 # =============================================================================
 # complete_run_log 테스트
 # =============================================================================
+
 
 class TestCompleteRunLog:
     """complete_run_log 함수 테스트."""
@@ -215,6 +223,7 @@ class TestCompleteRunLog:
 # =============================================================================
 # save_run_log / load_run_log 테스트
 # =============================================================================
+
 
 class TestSaveLoadRunLog:
     """save_run_log / load_run_log 함수 테스트."""
@@ -307,6 +316,7 @@ class TestSaveLoadRunLog:
 # =============================================================================
 # list_run_logs 테스트
 # =============================================================================
+
 
 class TestListRunLogs:
     """list_run_logs 함수 테스트."""

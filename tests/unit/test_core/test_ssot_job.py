@@ -28,6 +28,7 @@ from src.domain.errors import ErrorCodes, PolicyRejectError
 # job_lock 테스트
 # =============================================================================
 
+
 class TestJobLock:
     """job_lock 컨텍스트 매니저 테스트."""
 
@@ -125,6 +126,7 @@ class TestJobLock:
 # atomic_write_json 테스트
 # =============================================================================
 
+
 class TestAtomicWriteJson:
     """atomic_write_json 함수 테스트."""
 
@@ -193,6 +195,7 @@ class TestAtomicWriteJson:
 # verify_mismatch 테스트
 # =============================================================================
 
+
 class TestVerifyMismatch:
     """verify_mismatch 함수 테스트."""
 
@@ -233,6 +236,7 @@ class TestVerifyMismatch:
 # load_job_json 테스트
 # =============================================================================
 
+
 class TestLoadJobJson:
     """load_job_json 함수 테스트."""
 
@@ -261,6 +265,7 @@ class TestLoadJobJson:
 # =============================================================================
 # ensure_job_json 테스트
 # =============================================================================
+
 
 class TestEnsureJobJson:
     """ensure_job_json 함수 테스트."""
@@ -334,10 +339,13 @@ class TestEnsureJobJson:
 # Lock 해제 실패 테스트
 # =============================================================================
 
+
 class TestJobLockReleaseFailure:
     """락 해제 실패 시 warning 로그 테스트."""
 
-    def test_lock_release_failure_logs_warning(self, tmp_path: Path, test_config: dict, caplog):
+    def test_lock_release_failure_logs_warning(
+        self, tmp_path: Path, test_config: dict, caplog
+    ):
         """락 해제 실패 시 warning 로그가 남는지 확인."""
         import logging
 
@@ -364,9 +372,14 @@ class TestJobLockReleaseFailure:
 
         # warning 로그 확인
         assert any("Lock release failed" in record.message for record in caplog.records)
-        assert any("Manual cleanup may be required" in record.message for record in caplog.records)
+        assert any(
+            "Manual cleanup may be required" in record.message
+            for record in caplog.records
+        )
 
-    def test_lock_release_failure_includes_path_in_log(self, tmp_path: Path, test_config: dict, caplog):
+    def test_lock_release_failure_includes_path_in_log(
+        self, tmp_path: Path, test_config: dict, caplog
+    ):
         """락 해제 실패 시 로그에 경로 정보 포함 확인."""
         import logging
 
@@ -391,6 +404,7 @@ class TestJobLockReleaseFailure:
 # fsync 실패 테스트
 # =============================================================================
 
+
 class TestAtomicWriteFsyncFailure:
     """fsync 실패 시 warning 로그 테스트."""
 
@@ -410,7 +424,9 @@ class TestAtomicWriteFsyncFailure:
 
         # warning 로그 확인
         assert any("fsync failed" in record.message for record in caplog.records)
-        assert any("Data may not be durable" in record.message for record in caplog.records)
+        assert any(
+            "Data may not be durable" in record.message for record in caplog.records
+        )
 
     def test_fsync_failure_still_writes_file(self, tmp_path: Path):
         """fsync 실패해도 파일은 정상적으로 작성됨."""
@@ -467,6 +483,7 @@ class TestAtomicWriteFsyncFailure:
 # 디렉토리 fsync 테스트
 # =============================================================================
 
+
 class TestDirectoryFsync:
     """디렉토리 fsync 테스트."""
 
@@ -484,7 +501,9 @@ class TestDirectoryFsync:
             _fsync_dir(tmp_path)
 
         # warning 로그 확인
-        assert any("Directory fsync failed" in record.message for record in caplog.records)
+        assert any(
+            "Directory fsync failed" in record.message for record in caplog.records
+        )
 
     def test_dir_fsync_success_no_warning(self, tmp_path: Path, caplog):
         """디렉토리 fsync 성공 시 warning 없음."""
@@ -498,7 +517,9 @@ class TestDirectoryFsync:
         _fsync_dir(tmp_path)
 
         # dir fsync 관련 warning 없음
-        dir_fsync_warnings = [r for r in caplog.records if "Directory fsync" in r.message]
+        dir_fsync_warnings = [
+            r for r in caplog.records if "Directory fsync" in r.message
+        ]
         assert len(dir_fsync_warnings) == 0
 
     def test_atomic_write_calls_dir_fsync(self, tmp_path: Path):
@@ -529,6 +550,7 @@ class TestDirectoryFsync:
 # =============================================================================
 # Stale Lock 메타정보 테스트
 # =============================================================================
+
 
 class TestStaleLockMeta:
     """Stale lock 메타정보 테스트."""
@@ -634,7 +656,10 @@ class TestStaleLockMeta:
 
         # 오래된 시간으로 변경
         from datetime import timedelta
-        old_time = datetime.now(UTC) - timedelta(seconds=STALE_LOCK_THRESHOLD_SECONDS + 100)
+
+        old_time = datetime.now(UTC) - timedelta(
+            seconds=STALE_LOCK_THRESHOLD_SECONDS + 100
+        )
         meta["created_at"] = old_time.isoformat()
         (lock_dir / LOCK_META_FILENAME).write_text(json.dumps(meta))
 
@@ -656,7 +681,9 @@ class TestStaleLockMeta:
         lock_dir.mkdir()
 
         # 다른 호스트의 오래된 락 (TTL 초과)
-        old_time = datetime.now(UTC) - timedelta(seconds=STALE_LOCK_THRESHOLD_SECONDS + 100)
+        old_time = datetime.now(UTC) - timedelta(
+            seconds=STALE_LOCK_THRESHOLD_SECONDS + 100
+        )
         meta = {
             "pid": 999999999,
             "hostname": "test-host",

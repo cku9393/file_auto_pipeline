@@ -30,6 +30,7 @@ from .normalize import Normalizer
 @dataclass
 class XlsxContent:
     """Extracted XLSX content structure."""
+
     sheets: list[str] = field(default_factory=list)
     cells: dict[str, dict[str, Any]] = field(default_factory=dict)
     measurements: list[dict[str, Any]] = field(default_factory=list)

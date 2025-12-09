@@ -69,6 +69,7 @@ class ClaudeProvider(LLMProvider):
         if self._client is None:
             try:
                 import anthropic
+
                 self._client = anthropic.AsyncAnthropic(api_key=self.api_key)
             except ImportError as e:
                 raise ExtractionError(
@@ -109,9 +110,7 @@ class ClaudeProvider(LLMProvider):
         now = datetime.now(UTC).isoformat()
 
         # 프롬프트 구성 (재현성을 위해 저장)
-        prompt = self._build_prompt(
-            user_input, ocr_text, definition, prompt_template
-        )
+        prompt = self._build_prompt(user_input, ocr_text, definition, prompt_template)
         prompt_hash = compute_hash(prompt)
 
         # 모델 파라미터 수집
@@ -138,7 +137,9 @@ class ClaudeProvider(LLMProvider):
 
             # === 조건부 재현성 메타데이터 ===
             result.model_requested = model_requested
-            result.model_used = response.model if hasattr(response, "model") else self.model
+            result.model_used = (
+                response.model if hasattr(response, "model") else self.model
+            )
             result.extracted_at = now
 
             # Provider 정보
@@ -148,7 +149,9 @@ class ClaudeProvider(LLMProvider):
             result.extraction_method = "llm"
 
             # === Raw 저장 (storage_level에 따라) ===
-            self._apply_raw_storage(result, response_text, prompt, user_variables, template_id)
+            self._apply_raw_storage(
+                result, response_text, prompt, user_variables, template_id
+            )
 
             # 프롬프트 해시 (항상 저장)
             result.prompt_hash = prompt_hash
@@ -232,7 +235,7 @@ class ClaudeProvider(LLMProvider):
         else:  # FULL
             # 원문 저장 (truncation 적용)
             if len(response_text) > config.max_raw_size:
-                result.llm_raw_output = response_text[:config.max_raw_size]
+                result.llm_raw_output = response_text[: config.max_raw_size]
                 result.llm_raw_truncated = True
             else:
                 result.llm_raw_output = response_text
@@ -242,7 +245,7 @@ class ClaudeProvider(LLMProvider):
 
             # 프롬프트도 크기 제한 적용
             if len(prompt) > config.max_raw_size:
-                result.prompt_rendered = prompt[:config.max_raw_size]
+                result.prompt_rendered = prompt[: config.max_raw_size]
             else:
                 result.prompt_rendered = prompt
 
@@ -300,25 +303,15 @@ class ClaudeProvider(LLMProvider):
                     "Anthropic API 서버에 연결할 수 없습니다."
                 )
             elif isinstance(error, anthropic.RateLimitError):
-                return (
-                    "API 사용량 한도를 초과했습니다. "
-                    "잠시 후 다시 시도해주세요."
-                )
+                return "API 사용량 한도를 초과했습니다. 잠시 후 다시 시도해주세요."
             elif isinstance(error, anthropic.AuthenticationError):
                 return (
-                    "API 인증에 실패했습니다. "
-                    "MY_ANTHROPIC_KEY 환경변수를 확인해주세요."
+                    "API 인증에 실패했습니다. MY_ANTHROPIC_KEY 환경변수를 확인해주세요."
                 )
             elif isinstance(error, anthropic.PermissionDeniedError):
-                return (
-                    "이 작업을 수행할 권한이 없습니다. "
-                    "API 키의 권한을 확인해주세요."
-                )
+                return "이 작업을 수행할 권한이 없습니다. API 키의 권한을 확인해주세요."
             elif isinstance(error, anthropic.BadRequestError):
-                return (
-                    "요청 형식이 올바르지 않습니다. "
-                    "입력 데이터를 확인해주세요."
-                )
+                return "요청 형식이 올바르지 않습니다. 입력 데이터를 확인해주세요."
             elif isinstance(error, anthropic.APITimeoutError):
                 return (
                     "API 응답 시간이 초과되었습니다. "

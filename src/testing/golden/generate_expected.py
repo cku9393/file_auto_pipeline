@@ -27,6 +27,7 @@ from pathlib import Path
 
 class CIEnvironmentError(RuntimeError):
     """Raised when generate_expected is run in CI environment."""
+
     pass
 
 

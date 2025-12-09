@@ -20,6 +20,7 @@ from typing import Any
 # Raw Storage Configuration
 # =============================================================================
 
+
 class RawStorageLevel(str, Enum):
     """
     AI raw 데이터 저장 레벨.
@@ -28,6 +29,7 @@ class RawStorageLevel(str, Enum):
     minimal: prompt_hash + response_hash만 (용량 절약)
     full: prompt/response 원문 저장 (재현성 최대)
     """
+
     NONE = "none"
     MINIMAL = "minimal"
     FULL = "full"
@@ -40,6 +42,7 @@ class AIRawStorageConfig:
 
     운영에서 코드로 강제되는 보안/용량 정책.
     """
+
     # 저장 레벨
     storage_level: RawStorageLevel = RawStorageLevel.FULL
 
@@ -50,13 +53,15 @@ class AIRawStorageConfig:
     mask_pii: bool = False
 
     # 마스킹 패턴 (정규식)
-    pii_patterns: list[str] = field(default_factory=lambda: [
-        r'\d{6}-\d{7}',              # 주민번호
-        r'\d{3}-\d{4}-\d{4}',        # 전화번호
-        r'\d{3}-\d{3,4}-\d{4}',      # 전화번호 변형
-        r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}',  # 이메일
-        r'\d{3,4}-\d{4}-\d{4}-\d{4}',  # 카드번호
-    ])
+    pii_patterns: list[str] = field(
+        default_factory=lambda: [
+            r"\d{6}-\d{7}",  # 주민번호
+            r"\d{3}-\d{4}-\d{4}",  # 전화번호
+            r"\d{3}-\d{3,4}-\d{4}",  # 전화번호 변형
+            r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",  # 이메일
+            r"\d{3,4}-\d{4}-\d{4}-\d{4}",  # 카드번호
+        ]
+    )
 
 
 @dataclass
@@ -66,6 +71,7 @@ class LLMCallParams:
 
     재현성에 영향을 주는 모든 파라미터.
     """
+
     temperature: float | None = None
     top_p: float | None = None
     max_tokens: int | None = None
@@ -87,11 +93,12 @@ class PromptComponents:
 
     시스템 템플릿과 유저 입력을 분리하여 보안 리스크 감소.
     """
-    template_id: str | None = None       # 사용된 템플릿 ID
+
+    template_id: str | None = None  # 사용된 템플릿 ID
     template_version: str | None = None  # 템플릿 버전
     user_variables: dict[str, str] = field(default_factory=dict)  # 유저 입력 변수
-    rendered_prompt: str | None = None   # 렌더링된 전체 프롬프트 (옵션)
-    prompt_hash: str | None = None       # 프롬프트 해시 (검색/중복 제거용)
+    rendered_prompt: str | None = None  # 렌더링된 전체 프롬프트 (옵션)
+    prompt_hash: str | None = None  # 프롬프트 해시 (검색/중복 제거용)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -107,9 +114,11 @@ def compute_hash(content: str) -> str:
     """SHA-256 해시 계산."""
     return f"sha256:{hashlib.sha256(content.encode()).hexdigest()[:16]}"
 
+
 # =============================================================================
 # Result Data Classes
 # =============================================================================
+
 
 @dataclass
 class OCRResult:
@@ -121,6 +130,7 @@ class OCRResult:
     - model_used: 실제 호출된 모델 (fallback 시 다를 수 있음)
     - fallback_triggered: fallback 발생 여부
     """
+
     success: bool
     text: str | None = None
     confidence: float | None = None
@@ -167,6 +177,7 @@ class ExtractionResult:
     - request_id: API 요청 ID (가능한 경우)
     - prompt_hash: 프롬프트 해시 (검색/중복 제거용)
     """
+
     success: bool = True
     fields: dict[str, Any] = field(default_factory=dict)
     measurements: list[dict[str, Any]] = field(default_factory=list)
@@ -194,23 +205,23 @@ class ExtractionResult:
 
     # === Raw 저장 (storage_level에 따라 조건부) ===
     # full: 원문 저장, minimal: hash만, none: 저장 안 함
-    llm_raw_output: str | None = None       # API 응답 원문 (또는 truncated)
+    llm_raw_output: str | None = None  # API 응답 원문 (또는 truncated)
     llm_raw_output_hash: str | None = None  # 응답 해시 (minimal 모드용)
-    llm_raw_truncated: bool = False         # truncation 발생 여부
+    llm_raw_truncated: bool = False  # truncation 발생 여부
 
     # 프롬프트 분리 저장 (보안)
-    prompt_template_id: str | None = None    # 템플릿 ID
+    prompt_template_id: str | None = None  # 템플릿 ID
     prompt_template_version: str | None = None  # 템플릿 버전
     prompt_user_variables: dict[str, str] | None = None  # 유저 입력 변수
-    prompt_rendered: str | None = None       # 렌더링된 프롬프트 (full 모드)
-    prompt_hash: str | None = None           # 프롬프트 해시
+    prompt_rendered: str | None = None  # 렌더링된 프롬프트 (full 모드)
+    prompt_hash: str | None = None  # 프롬프트 해시
 
     # 하위 호환용 (deprecated, prompt_rendered로 대체)
     prompt_used: str | None = None
 
     # === 정규식 추출용 메타데이터 ===
     extraction_method: str | None = None  # "llm", "regex"
-    regex_version: str | None = None      # 정규식 규칙 버전/해시
+    regex_version: str | None = None  # 정규식 규칙 버전/해시
 
     def to_dict(self) -> dict[str, Any]:
         result = {
@@ -253,6 +264,7 @@ class ExtractionResult:
 # Provider Exceptions
 # =============================================================================
 
+
 class ProviderError(Exception):
     """Provider 관련 에러."""
 
@@ -265,17 +277,20 @@ class ProviderError(Exception):
 
 class OCRError(ProviderError):
     """OCR 관련 에러."""
+
     pass
 
 
 class ExtractionError(ProviderError):
     """LLM 추출 관련 에러."""
+
     pass
 
 
 # =============================================================================
 # Abstract Providers
 # =============================================================================
+
 
 class LLMProvider(ABC):
     """

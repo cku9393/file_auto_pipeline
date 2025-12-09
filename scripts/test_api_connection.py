@@ -43,7 +43,9 @@ async def test_anthropic():
         )
 
         print("📤 테스트 요청 전송 중...")
-        response = await provider.complete("Say 'Hello, API test successful!' in Korean.")
+        response = await provider.complete(
+            "Say 'Hello, API test successful!' in Korean."
+        )
 
         print(f"📥 응답: {response}")
         print("✅ Anthropic API 연결 성공!")
@@ -79,6 +81,7 @@ async def test_gemini():
         # 간단한 테스트 이미지 (1x1 흰색 PNG)
         # 실제 OCR 테스트를 위한 최소 이미지
         import base64
+
         # 1x1 white pixel PNG (valid minimal PNG)
         test_image = base64.b64decode(
             "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
@@ -97,6 +100,7 @@ async def test_gemini():
     except Exception as e:
         print(f"❌ Gemini API 오류: {type(e).__name__}: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -113,8 +117,9 @@ async def test_gemini_with_real_image():
         return False
 
     # 테스트용 이미지 경로 확인
-    test_images = list(Path("tests/fixtures").rglob("*.jpg")) + \
-                  list(Path("tests/fixtures").rglob("*.png"))
+    test_images = list(Path("tests/fixtures").rglob("*.jpg")) + list(
+        Path("tests/fixtures").rglob("*.png")
+    )
 
     if not test_images:
         print("⏭️ 테스트 이미지가 없어 스킵")

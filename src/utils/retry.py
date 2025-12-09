@@ -56,9 +56,7 @@ async def retry_with_exponential_backoff(
 
         except exceptions as e:
             if attempt == max_retries:
-                logger.error(
-                    f"All {max_retries + 1} attempts failed. Last error: {e}"
-                )
+                logger.error(f"All {max_retries + 1} attempts failed. Last error: {e}")
                 raise
 
             logger.warning(

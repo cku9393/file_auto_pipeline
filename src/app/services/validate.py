@@ -28,10 +28,28 @@ from src.domain.schemas import OverrideLog, OverrideReasonCode
 # =============================================================================
 
 # 금지 토큰 (대소문자/공백 변형 무시)
-FORBIDDEN_TOKENS = frozenset([
-    "ok", "okay", "n/a", "na", "none", "-", "skip", "pass", "test",
-    ".", "..", "...", "x", "xx", "xxx", "ㅇ", "ㅇㅇ", "ㅇㅇㅇ",
-])
+FORBIDDEN_TOKENS = frozenset(
+    [
+        "ok",
+        "okay",
+        "n/a",
+        "na",
+        "none",
+        "-",
+        "skip",
+        "pass",
+        "test",
+        ".",
+        "..",
+        "...",
+        "x",
+        "xx",
+        "xxx",
+        "ㅇ",
+        "ㅇㅇ",
+        "ㅇㅇㅇ",
+    ]
+)
 
 # 최소 상세 사유 길이
 MIN_REASON_DETAIL_LENGTH = 10
@@ -41,9 +59,11 @@ MIN_REASON_DETAIL_LENGTH = 10
 # Override Reason 파싱 결과
 # =============================================================================
 
+
 @dataclass
 class ParsedOverrideReason:
     """파싱된 override 사유."""
+
     code: OverrideReasonCode
     detail: str
     raw: str  # 원본 입력
@@ -52,6 +72,7 @@ class ParsedOverrideReason:
 @dataclass
 class OverrideReasonError:
     """Override 사유 검증 실패 정보."""
+
     field: str
     error_type: str  # "forbidden_token", "min_length", "invalid_code"
     message: str
@@ -61,6 +82,7 @@ class OverrideReasonError:
 # =============================================================================
 # Override Reason 검증 함수
 # =============================================================================
+
 
 def parse_override_reason(raw: Any) -> ParsedOverrideReason:
     """
@@ -197,13 +219,16 @@ def validate_override_reason(
 
     return parsed, None
 
+
 # =============================================================================
 # Validation Result
 # =============================================================================
 
+
 @dataclass
 class ValidationResult:
     """검증 결과."""
+
     valid: bool
     fields: dict[str, Any] = field(default_factory=dict)
     measurements: list[dict[str, Any]] = field(default_factory=list)
@@ -227,6 +252,7 @@ class ValidationResult:
 # =============================================================================
 # Validation Service
 # =============================================================================
+
 
 class ValidationService:
     """
@@ -290,11 +316,13 @@ class ValidationService:
                 try:
                     result.fields[field_name] = self._normalize_value(value, field_type)
                 except ValueError as e:
-                    result.invalid_values.append({
-                        "field": field_name,
-                        "value": value,
-                        "error": str(e),
-                    })
+                    result.invalid_values.append(
+                        {
+                            "field": field_name,
+                            "value": value,
+                            "error": str(e),
+                        }
+                    )
                     result.valid = False
                     continue
 
@@ -366,6 +394,7 @@ class ValidationService:
         if field_type == "token":
             # strip + 연속 공백 정리
             import re
+
             normalized = value_str.strip()
             normalized = re.sub(r"\s+", " ", normalized)
             return normalized
@@ -397,8 +426,12 @@ class ValidationService:
         definition.yaml의 result_pass_aliases, result_fail_aliases 기반.
         """
         validation = self.definition.get("validation", {})
-        pass_aliases = validation.get("result_pass_aliases", ["PASS", "OK", "합격", "O"])
-        fail_aliases = validation.get("result_fail_aliases", ["FAIL", "NG", "불합격", "X"])
+        pass_aliases = validation.get(
+            "result_pass_aliases", ["PASS", "OK", "합격", "O"]
+        )
+        fail_aliases = validation.get(
+            "result_fail_aliases", ["FAIL", "NG", "불합격", "X"]
+        )
 
         value_upper = str(value).strip().upper()
 
@@ -428,22 +461,28 @@ class ValidationService:
             try:
                 decimal_value = Decimal(str(measured)).normalize()
 
-                if reject_nan_inf and (decimal_value.is_nan() or decimal_value.is_infinite()):
-                    result.invalid_values.append({
-                        "field": f"measurements[{i}].measured",
-                        "value": measured,
-                        "error": "NaN/Inf not allowed",
-                    })
+                if reject_nan_inf and (
+                    decimal_value.is_nan() or decimal_value.is_infinite()
+                ):
+                    result.invalid_values.append(
+                        {
+                            "field": f"measurements[{i}].measured",
+                            "value": measured,
+                            "error": "NaN/Inf not allowed",
+                        }
+                    )
                     result.valid = False
                 else:
                     result.measurements[i]["measured"] = str(decimal_value)
 
             except InvalidOperation:
-                result.invalid_values.append({
-                    "field": f"measurements[{i}].measured",
-                    "value": measured,
-                    "error": "Invalid number",
-                })
+                result.invalid_values.append(
+                    {
+                        "field": f"measurements[{i}].measured",
+                        "value": measured,
+                        "error": "Invalid number",
+                    }
+                )
                 result.valid = False
 
     def _create_override_log(

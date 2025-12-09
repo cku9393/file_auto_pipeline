@@ -26,6 +26,7 @@ from filelock import FileLock, Timeout
 # Exceptions
 # =============================================================================
 
+
 class TemplateError(Exception):
     """템플릿 관련 에러."""
 
@@ -40,10 +41,12 @@ class TemplateError(Exception):
 # Constants
 # =============================================================================
 
+
 class TemplateStatus(str, Enum):
     """템플릿 상태."""
-    DRAFT = "draft"      # 작성 중, 렌더 불가
-    READY = "ready"      # 사용 가능, 렌더 가능
+
+    DRAFT = "draft"  # 작성 중, 렌더 불가
+    READY = "ready"  # 사용 가능, 렌더 가능
     ARCHIVED = "archived"  # 폐기됨, 렌더 불가
 
 
@@ -56,6 +59,7 @@ FORBIDDEN_CHARS = set('/\\:*?"<>| ')
 # =============================================================================
 # Validation
 # =============================================================================
+
 
 def validate_template_id(template_id: str) -> None:
     """
@@ -128,9 +132,11 @@ def get_template_path(
 # Data Classes
 # =============================================================================
 
+
 @dataclass
 class TemplateMeta:
     """템플릿 메타데이터 (meta.json)."""
+
     template_id: str
     doc_type: str
     display_name: str
@@ -154,7 +160,9 @@ class TemplateMeta:
             "doc_type": self.doc_type,
             "display_name": self.display_name,
             "description": self.description,
-            "status": self.status.value if isinstance(self.status, TemplateStatus) else self.status,
+            "status": self.status.value
+            if isinstance(self.status, TemplateStatus)
+            else self.status,
             "version": self.version,
             "created_at": self.created_at,
             "created_by": self.created_by,
@@ -191,6 +199,7 @@ class TemplateMeta:
 # =============================================================================
 # Template Manager
 # =============================================================================
+
 
 class TemplateManager:
     """
@@ -311,7 +320,9 @@ class TemplateManager:
             self._save_meta(template_path, meta)
 
             # 빈 manifest 생성
-            self._save_manifest(template_path, self._default_manifest(template_id, doc_type))
+            self._save_manifest(
+                template_path, self._default_manifest(template_id, doc_type)
+            )
 
             return template_path
 
@@ -500,7 +511,9 @@ class TemplateManager:
                         meta = TemplateMeta(
                             template_id=manifest.get("template_id", template_dir.name),
                             doc_type=manifest.get("doc_type", "unknown"),
-                            display_name=manifest.get("display_name", template_dir.name),
+                            display_name=manifest.get(
+                                "display_name", template_dir.name
+                            ),
                             status=TemplateStatus.READY,
                         )
                         if status is None or meta.status == status:

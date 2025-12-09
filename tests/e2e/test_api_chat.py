@@ -18,6 +18,7 @@ from src.app.main import app
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def client():
     """FastAPI TestClient."""
@@ -28,6 +29,7 @@ def client():
 # =============================================================================
 # Health Check
 # =============================================================================
+
 
 class TestHealthCheck:
     """헬스 체크 테스트."""
@@ -44,6 +46,7 @@ class TestHealthCheck:
 # Chat Page
 # =============================================================================
 
+
 class TestChatPage:
     """채팅 페이지 테스트."""
 
@@ -59,6 +62,7 @@ class TestChatPage:
 # =============================================================================
 # POST /api/chat/message
 # =============================================================================
+
 
 class TestSendMessage:
     """메시지 전송 테스트."""
@@ -105,6 +109,7 @@ class TestSendMessage:
 # POST /api/chat/upload
 # =============================================================================
 
+
 class TestUploadFile:
     """파일 업로드 테스트."""
 
@@ -140,6 +145,7 @@ class TestUploadFile:
 # POST /api/chat/extract
 # =============================================================================
 
+
 class TestExtractFields:
     """필드 추출 테스트."""
 
@@ -162,6 +168,7 @@ class TestExtractFields:
 # =============================================================================
 # POST /api/chat/override
 # =============================================================================
+
 
 class TestApplyOverride:
     """Override 적용 테스트."""
@@ -189,10 +196,13 @@ class TestApplyOverride:
 # GET /api/chat/stream (SSE)
 # =============================================================================
 
+
 class TestChatStream:
     """SSE 스트림 테스트."""
 
-    @pytest.mark.skip(reason="SSE 스트림 테스트는 TestClient에서 제한적 - httpx 비동기 테스트 필요")
+    @pytest.mark.skip(
+        reason="SSE 스트림 테스트는 TestClient에서 제한적 - httpx 비동기 테스트 필요"
+    )
     def test_stream_returns_event_stream(self, client):
         """GET /api/chat/stream → SSE."""
         # Note: TestClient에서 SSE 테스트는 제한적
@@ -206,6 +216,7 @@ class TestChatStream:
 # =============================================================================
 # Error Cases
 # =============================================================================
+
 
 class TestChatErrorCases:
     """에러 케이스 테스트."""

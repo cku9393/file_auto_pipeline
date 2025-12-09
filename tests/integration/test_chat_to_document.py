@@ -26,6 +26,7 @@ from src.render.word import DocxRenderer
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def chat_root(tmp_path: Path) -> Path:
     """채팅 테스트 루트 디렉터리."""
@@ -111,19 +112,21 @@ def docx_template(chat_root: Path) -> Path:
 def mock_llm_provider():
     """Mock LLM Provider."""
     provider = MagicMock()
-    provider.extract_fields = AsyncMock(return_value=ExtractionResult(
-        success=True,
-        fields={
-            "wo_no": "WO-001",
-            "line": "L1",
-            "part_no": "PART-A",
-            "lot": "LOT-001",
-            "result": "PASS",
-            "inspector": "홍길동",
-        },
-        model_requested="claude-opus-4-5-20251101",
-        model_used="claude-opus-4-5-20251101",
-    ))
+    provider.extract_fields = AsyncMock(
+        return_value=ExtractionResult(
+            success=True,
+            fields={
+                "wo_no": "WO-001",
+                "line": "L1",
+                "part_no": "PART-A",
+                "lot": "LOT-001",
+                "result": "PASS",
+                "inspector": "홍길동",
+            },
+            model_requested="claude-opus-4-5-20251101",
+            model_used="claude-opus-4-5-20251101",
+        )
+    )
     return provider
 
 
@@ -151,6 +154,7 @@ def mock_ocr_result():
 # =============================================================================
 # 1. IntakeService 통합 테스트
 # =============================================================================
+
 
 class TestIntakeServiceIntegration:
     """IntakeService 통합 테스트."""
@@ -203,11 +207,14 @@ class TestIntakeServiceIntegration:
 # 2. Extraction 통합 테스트
 # =============================================================================
 
+
 class TestExtractionIntegration:
     """Extraction 서비스 통합 테스트."""
 
     @pytest.mark.asyncio
-    async def test_regex_extraction(self, definition_path, prompts_dir, mock_llm_provider):
+    async def test_regex_extraction(
+        self, definition_path, prompts_dir, mock_llm_provider
+    ):
         """정규식 추출 테스트."""
         config = {"ai": {"llm": {"model": "claude-opus-4-5-20251101"}}}
 
@@ -267,17 +274,19 @@ class TestExtractionIntegration:
     ):
         """정규식 + LLM 결과 병합."""
         mock_provider = MagicMock()
-        mock_provider.extract_fields = AsyncMock(return_value=ExtractionResult(
-            success=True,
-            fields={
-                "wo_no": "WO-FROM-LLM",  # LLM이 다른 값 반환
-                "line": "L1",
-                "part_no": "PART-A",
-                "lot": "LOT-001",
-                "result": "PASS",
-            },
-            model_used="claude",
-        ))
+        mock_provider.extract_fields = AsyncMock(
+            return_value=ExtractionResult(
+                success=True,
+                fields={
+                    "wo_no": "WO-FROM-LLM",  # LLM이 다른 값 반환
+                    "line": "L1",
+                    "part_no": "PART-A",
+                    "lot": "LOT-001",
+                    "result": "PASS",
+                },
+                model_used="claude",
+            )
+        )
 
         config = {"ai": {"llm": {"model": "claude-opus-4-5-20251101"}}}
 
@@ -302,6 +311,7 @@ class TestExtractionIntegration:
 # =============================================================================
 # 3. 채팅 → 문서 전체 흐름 테스트
 # =============================================================================
+
 
 class TestChatToDocumentFlow:
     """채팅 → 문서 생성 전체 흐름."""
@@ -338,12 +348,14 @@ class TestChatToDocumentFlow:
         extraction_result = await extract_service.extract(user_input)
 
         # Intake에 추출 결과 저장
-        intake_service.add_extraction_result(ExtractionResult(
-            success=True,
-            fields=extraction_result.fields,
-            model_requested="claude-opus-4-5-20251101",
-            model_used=extraction_result.model_used,
-        ))
+        intake_service.add_extraction_result(
+            ExtractionResult(
+                success=True,
+                fields=extraction_result.fields,
+                model_requested="claude-opus-4-5-20251101",
+                model_used=extraction_result.model_used,
+            )
+        )
 
         # 3. Validation: 검증
         validate_service = ValidationService(definition_path)
@@ -388,17 +400,19 @@ class TestChatToDocumentFlow:
         intake_service.create_session()
 
         # 2. 추출 결과 저장
-        intake_service.add_extraction_result(ExtractionResult(
-            success=True,
-            fields={
-                "wo_no": "WO-001",
-                "line": "L1",
-                "part_no": "PART-A",
-                "lot": "LOT-001",
-                "result": "PASS",
-            },
-            model_used="regex",
-        ))
+        intake_service.add_extraction_result(
+            ExtractionResult(
+                success=True,
+                fields={
+                    "wo_no": "WO-001",
+                    "line": "L1",
+                    "part_no": "PART-A",
+                    "lot": "LOT-001",
+                    "result": "PASS",
+                },
+                model_used="regex",
+            )
+        )
 
         # 3. 사용자 수정
         intake_service.add_user_correction(
@@ -462,6 +476,7 @@ class TestChatToDocumentFlow:
 # 4. 세션 불변성 테스트
 # =============================================================================
 
+
 class TestSessionImmutability:
     """세션 불변성 테스트."""
 
@@ -474,19 +489,23 @@ class TestSessionImmutability:
         intake_service.create_session()
 
         # 첫 번째 추출 결과
-        intake_service.add_extraction_result(ExtractionResult(
-            success=True,
-            fields={"wo_no": "WO-001"},
-            model_used="regex",
-        ))
+        intake_service.add_extraction_result(
+            ExtractionResult(
+                success=True,
+                fields={"wo_no": "WO-001"},
+                model_used="regex",
+            )
+        )
 
         # 두 번째 추출 시도 → 에러
         with pytest.raises(PolicyRejectError):
-            intake_service.add_extraction_result(ExtractionResult(
-                success=True,
-                fields={"wo_no": "WO-002"},
-                model_used="regex",
-            ))
+            intake_service.add_extraction_result(
+                ExtractionResult(
+                    success=True,
+                    fields={"wo_no": "WO-002"},
+                    model_used="regex",
+                )
+            )
 
     def test_user_corrections_are_appended(self, chat_root):
         """사용자 수정은 append만 가능."""
@@ -494,11 +513,13 @@ class TestSessionImmutability:
         intake_service = IntakeService(job_dir)
         intake_service.create_session()
 
-        intake_service.add_extraction_result(ExtractionResult(
-            success=True,
-            fields={"wo_no": "WO-001"},
-            model_used="regex",
-        ))
+        intake_service.add_extraction_result(
+            ExtractionResult(
+                success=True,
+                fields={"wo_no": "WO-001"},
+                model_used="regex",
+            )
+        )
 
         # 여러 번 수정 가능 (히스토리 유지)
         intake_service.add_user_correction("wo_no", "WO-001", "WO-001A")

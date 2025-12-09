@@ -25,6 +25,7 @@ from .normalize import Normalizer
 @dataclass
 class ImageInfo:
     """Extracted image information."""
+
     rel_id: str
     filename: str | None = None
     width: int | None = None
@@ -37,6 +38,7 @@ class ImageInfo:
 @dataclass
 class TableCell:
     """Extracted table cell."""
+
     table_index: int
     row: int
     col: int
@@ -46,6 +48,7 @@ class TableCell:
 @dataclass
 class DocxContent:
     """Extracted DOCX content structure."""
+
     paragraphs: list[str] = field(default_factory=list)
     tables: list[list[list[str]]] = field(default_factory=list)
     images: list[dict[str, Any]] = field(default_factory=list)
@@ -186,20 +189,20 @@ class DocxExtractor:
                     if self.include_image_details:
                         # Get the target filename
                         filename = None
-                        if hasattr(rel, 'target_ref'):
+                        if hasattr(rel, "target_ref"):
                             # target_ref is the actual path string
                             target = str(rel.target_ref)
-                            filename = target.split('/')[-1]
+                            filename = target.split("/")[-1]
                             image_info["filename"] = filename
-                        elif hasattr(rel, '_target'):
+                        elif hasattr(rel, "_target"):
                             # Fallback: _target might be a string or object
                             target = rel._target
                             if isinstance(target, str):
-                                filename = target.split('/')[-1]
+                                filename = target.split("/")[-1]
                             else:
                                 # It's an object, try to get partname
                                 try:
-                                    filename = target.partname.split('/')[-1]
+                                    filename = target.partname.split("/")[-1]
                                 except Exception:
                                     filename = None
                             if filename:
@@ -207,7 +210,9 @@ class DocxExtractor:
 
                         # Infer slot from filename pattern
                         if filename:
-                            image_info["inferred_slot"] = self._infer_slot_from_filename(filename)
+                            image_info["inferred_slot"] = (
+                                self._infer_slot_from_filename(filename)
+                            )
 
                         # Try to get image dimensions from the blob
                         try:
@@ -224,22 +229,23 @@ class DocxExtractor:
         # Also count media files from ZIP structure (more reliable count)
         try:
             with ZipFile(docx_path) as zf:
-                media_files = [
-                    f for f in zf.namelist()
-                    if f.startswith('word/media/')
-                ]
+                media_files = [f for f in zf.namelist() if f.startswith("word/media/")]
                 media_file_count = len(media_files)
 
                 # If we didn't get relationships, use ZIP fallback
                 if not images:
                     for i, media_file in enumerate(media_files):
-                        filename = media_file.split('/')[-1]
-                        images.append({
-                            "rel_id": f"media_{i+1}",
-                            "filename": filename,
-                            "count_position": i + 1,
-                            "inferred_slot": self._infer_slot_from_filename(filename),
-                        })
+                        filename = media_file.split("/")[-1]
+                        images.append(
+                            {
+                                "rel_id": f"media_{i + 1}",
+                                "filename": filename,
+                                "count_position": i + 1,
+                                "inferred_slot": self._infer_slot_from_filename(
+                                    filename
+                                ),
+                            }
+                        )
         except Exception:
             pass
 
@@ -267,7 +273,7 @@ class DocxExtractor:
             return None
 
         # Remove extension
-        stem = filename.rsplit('.', 1)[0] if '.' in filename else filename
+        stem = filename.rsplit(".", 1)[0] if "." in filename else filename
 
         # Known slot patterns
         slot_patterns = [
@@ -285,7 +291,7 @@ class DocxExtractor:
                 return slot
 
         # Generic image names (image1, image2, etc.) → None
-        if re.match(r'^image\d+$', stem_lower):
+        if re.match(r"^image\d+$", stem_lower):
             return None
 
         return None

@@ -85,10 +85,7 @@ def compute_packet_hash(
     excluded_fields = get_excluded_fields(field_types, exclude_types)
 
     # 제외 필드 필터링
-    filtered = {
-        k: v for k, v in data.items()
-        if k not in excluded_fields
-    }
+    filtered = {k: v for k, v in data.items() if k not in excluded_fields}
 
     # measurements도 포함하되, 내부 필드 정렬
     if "measurements" in filtered:

@@ -21,8 +21,8 @@ class OCRService:
     """
 
     # Confidence 임계값
-    CONFIDENCE_HIGH = 0.8   # 성공
-    CONFIDENCE_LOW = 0.5    # 실패
+    CONFIDENCE_HIGH = 0.8  # 성공
+    CONFIDENCE_LOW = 0.5  # 실패
 
     def __init__(
         self,
@@ -127,12 +127,6 @@ class OCRService:
         if evaluation == "success":
             return "이미지에서 텍스트를 성공적으로 추출했습니다."
         elif evaluation == "warning":
-            return (
-                "이미지 인식 결과가 불확실합니다. "
-                "추출된 텍스트를 확인해주세요."
-            )
+            return "이미지 인식 결과가 불확실합니다. 추출된 텍스트를 확인해주세요."
         else:
-            return (
-                "이미지를 인식하지 못했습니다. "
-                "직접 입력해주세요."
-            )
+            return "이미지를 인식하지 못했습니다. 직접 입력해주세요."

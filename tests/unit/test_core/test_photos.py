@@ -30,6 +30,7 @@ from src.domain.schemas import PhotoSlot
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def sample_photo_definition(tmp_path: Path) -> Path:
     """테스트용 definition.yaml (photos 섹션)."""
@@ -87,6 +88,7 @@ def derived_photo_dir(tmp_path: Path) -> Path:
 # =============================================================================
 # safe_move 테스트
 # =============================================================================
+
 
 class TestSafeMove:
     """safe_move 함수 테스트."""
@@ -202,6 +204,7 @@ class TestSafeMove:
 # load_photo_slots 테스트
 # =============================================================================
 
+
 class TestLoadPhotoSlots:
     """load_photo_slots 함수 테스트."""
 
@@ -233,6 +236,7 @@ class TestLoadPhotoSlots:
 # get_allowed_extensions / get_prefer_order 테스트
 # =============================================================================
 
+
 class TestPhotoConfig:
     """사진 설정 함수 테스트."""
 
@@ -253,6 +257,7 @@ class TestPhotoConfig:
 # =============================================================================
 # select_photo_for_slot 테스트
 # =============================================================================
+
 
 class TestSelectPhotoForSlot:
     """select_photo_for_slot 함수 테스트."""
@@ -381,6 +386,7 @@ class TestSelectPhotoForSlot:
 # archive_old_derived 테스트
 # =============================================================================
 
+
 class TestArchiveOldDerived:
     """archive_old_derived 함수 테스트."""
 
@@ -431,6 +437,7 @@ class TestArchiveOldDerived:
 # =============================================================================
 # copy_to_derived 테스트
 # =============================================================================
+
 
 class TestCopyToDerived:
     """copy_to_derived 함수 테스트."""

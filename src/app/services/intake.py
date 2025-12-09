@@ -123,11 +123,13 @@ class IntakeService:
         if attachments:
             for filename, file_bytes in attachments:
                 saved_path = self._save_upload(filename, file_bytes)
-                saved_attachments.append(IntakeAttachment(
-                    filename=filename,
-                    size=len(file_bytes),
-                    path=str(saved_path.relative_to(self.job_dir)),
-                ))
+                saved_attachments.append(
+                    IntakeAttachment(
+                        filename=filename,
+                        size=len(file_bytes),
+                        path=str(saved_path.relative_to(self.job_dir)),
+                    )
+                )
 
         message = IntakeMessage(
             role=role,
@@ -347,7 +349,8 @@ class IntakeService:
             },
             "extraction_result": (
                 session.extraction_result.to_dict()
-                if session.extraction_result and hasattr(session.extraction_result, "to_dict")
+                if session.extraction_result
+                and hasattr(session.extraction_result, "to_dict")
                 else session.extraction_result
             ),
             "user_corrections": [
@@ -384,19 +387,21 @@ class IntakeService:
 
         # Messages
         for m in data.get("messages", []):
-            session.messages.append(IntakeMessage(
-                role=m["role"],
-                content=m["content"],
-                timestamp=m["timestamp"],
-                attachments=[
-                    IntakeAttachment(
-                        filename=a["filename"],
-                        size=a["size"],
-                        path=a["path"],
-                    )
-                    for a in m.get("attachments", [])
-                ],
-            ))
+            session.messages.append(
+                IntakeMessage(
+                    role=m["role"],
+                    content=m["content"],
+                    timestamp=m["timestamp"],
+                    attachments=[
+                        IntakeAttachment(
+                            filename=a["filename"],
+                            size=a["size"],
+                            path=a["path"],
+                        )
+                        for a in m.get("attachments", [])
+                    ],
+                )
+            )
 
         # OCR Results
         for k, v in data.get("ocr_results", {}).items():
@@ -416,6 +421,7 @@ class IntakeService:
             from src.app.providers.base import (
                 ExtractionResult as ProviderExtractionResult,
             )
+
             er = data["extraction_result"]
             session.extraction_result = ProviderExtractionResult(
                 success=er.get("success", True),
@@ -450,21 +456,25 @@ class IntakeService:
 
         # User Corrections
         for c in data.get("user_corrections", []):
-            session.user_corrections.append(UserCorrection(
-                field=c["field"],
-                original=c["original"],
-                corrected=c["corrected"],
-                corrected_at=c["corrected_at"],
-                corrected_by=c.get("corrected_by", "user"),
-            ))
+            session.user_corrections.append(
+                UserCorrection(
+                    field=c["field"],
+                    original=c["original"],
+                    corrected=c["corrected"],
+                    corrected_at=c["corrected_at"],
+                    corrected_by=c.get("corrected_by", "user"),
+                )
+            )
 
         # Photo Mappings
         for p in data.get("photo_mappings", []):
-            session.photo_mappings.append(PhotoMapping(
-                slot_key=p["slot_key"],
-                filename=p["filename"],
-                raw_path=p["raw_path"],
-                mapped_at=p["mapped_at"],
-            ))
+            session.photo_mappings.append(
+                PhotoMapping(
+                    slot_key=p["slot_key"],
+                    filename=p["filename"],
+                    raw_path=p["raw_path"],
+                    mapped_at=p["mapped_at"],
+                )
+            )
 
         return session

@@ -27,6 +27,7 @@ from src.templates.scaffolder import (
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def sample_definition(tmp_path: Path) -> Path:
     """테스트용 definition.yaml."""
@@ -60,6 +61,7 @@ def scaffolder(sample_definition: Path) -> TemplateScaffolder:
 # =============================================================================
 # detect_placeholders 테스트
 # =============================================================================
+
 
 class TestDetectPlaceholders:
     """detect_placeholders 함수 테스트."""
@@ -115,6 +117,7 @@ class TestHasPlaceholders:
 # detect_labels_rule_based 테스트
 # =============================================================================
 
+
 class TestDetectLabelsRuleBased:
     """detect_labels_rule_based 함수 테스트."""
 
@@ -154,7 +157,9 @@ class TestDetectLabelsRuleBased:
 
         for text in texts:
             detected = detect_labels_rule_based(text)
-            assert any(f.field_name == "inspector" for f in detected), f"Failed for: {text}"
+            assert any(f.field_name == "inspector" for f in detected), (
+                f"Failed for: {text}"
+            )
 
     def test_extracts_values(self):
         """값 추출."""
@@ -187,6 +192,7 @@ class TestDetectLabelsRuleBased:
 # =============================================================================
 # TemplateScaffolder.analyze_document 테스트
 # =============================================================================
+
 
 class TestTemplateScaffolderAnalyze:
     """TemplateScaffolder.analyze_document 테스트."""
@@ -290,6 +296,7 @@ class TestTemplateScaffolderAnalyze:
 # ScaffoldResult 테스트
 # =============================================================================
 
+
 class TestScaffoldResult:
     """ScaffoldResult 데이터클래스 테스트."""
 
@@ -324,6 +331,7 @@ class TestScaffoldResult:
 # analyze_example_document 간편 함수 테스트
 # =============================================================================
 
+
 class TestAnalyzeExampleDocument:
     """analyze_example_document 간편 함수 테스트."""
 
@@ -340,6 +348,7 @@ class TestAnalyzeExampleDocument:
 # =============================================================================
 # 검수 플래그 테스트 (ADR-0002 핵심)
 # =============================================================================
+
 
 class TestRequiresReviewFlag:
     """

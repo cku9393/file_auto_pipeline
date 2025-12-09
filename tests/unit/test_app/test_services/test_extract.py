@@ -19,6 +19,7 @@ from src.app.services.extract import ExtractionService
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def definition_path(tmp_path: Path) -> Path:
     """테스트용 definition.yaml."""
@@ -94,12 +95,14 @@ def config() -> dict:
 def mock_provider():
     """Mock LLM provider."""
     provider = MagicMock()
-    provider.extract_fields = AsyncMock(return_value=ExtractionResult(
-        success=True,
-        fields={"wo_no": "WO-001", "line": "L1"},
-        model_requested="claude-opus-4-5-20251101",
-        model_used="claude-opus-4-5-20251101",
-    ))
+    provider.extract_fields = AsyncMock(
+        return_value=ExtractionResult(
+            success=True,
+            fields={"wo_no": "WO-001", "line": "L1"},
+            model_requested="claude-opus-4-5-20251101",
+            model_used="claude-opus-4-5-20251101",
+        )
+    )
     return provider
 
 
@@ -122,6 +125,7 @@ def extraction_service(
 # =============================================================================
 # 초기화 테스트
 # =============================================================================
+
 
 class TestExtractionServiceInit:
     """ExtractionService 초기화 테스트."""
@@ -182,6 +186,7 @@ class TestExtractionServiceInit:
 # =============================================================================
 # 정규식 추출 테스트
 # =============================================================================
+
 
 class TestRegexExtraction:
     """정규식 추출 테스트."""
@@ -278,6 +283,7 @@ class TestRegexExtraction:
 # _build_field_pattern 테스트
 # =============================================================================
 
+
 class TestBuildFieldPattern:
     """_build_field_pattern 테스트."""
 
@@ -289,6 +295,7 @@ class TestBuildFieldPattern:
         )
 
         import re
+
         assert re.search(pattern, "WO No: WO-001", re.IGNORECASE)
         assert re.search(pattern, "작업번호: WO-002", re.IGNORECASE)
 
@@ -297,12 +304,14 @@ class TestBuildFieldPattern:
         pattern = extraction_service._build_field_pattern("custom_field", [])
 
         import re
+
         assert re.search(pattern, "custom_field: value", re.IGNORECASE)
 
 
 # =============================================================================
 # _get_required_fields 테스트
 # =============================================================================
+
 
 class TestGetRequiredFields:
     """_get_required_fields 테스트."""
@@ -328,6 +337,7 @@ class TestGetRequiredFields:
 # =============================================================================
 # extract 테스트
 # =============================================================================
+
 
 class TestExtract:
     """extract 메서드 테스트."""
@@ -365,11 +375,19 @@ class TestExtract:
     @pytest.mark.asyncio
     async def test_merges_regex_and_llm_results(self, extraction_service):
         """정규식 + LLM 결과 병합."""
-        extraction_service.provider.extract_fields = AsyncMock(return_value=ExtractionResult(
-            success=True,
-            fields={"wo_no": "WO-FROM-LLM", "line": "L1", "part_no": "P1", "lot": "LOT1", "result": "PASS"},
-            model_used="claude",
-        ))
+        extraction_service.provider.extract_fields = AsyncMock(
+            return_value=ExtractionResult(
+                success=True,
+                fields={
+                    "wo_no": "WO-FROM-LLM",
+                    "line": "L1",
+                    "part_no": "P1",
+                    "lot": "LOT1",
+                    "result": "PASS",
+                },
+                model_used="claude",
+            )
+        )
 
         user_input = "작업번호: WO-001"  # 정규식으로 wo_no 추출
 
@@ -382,11 +400,13 @@ class TestExtract:
     @pytest.mark.asyncio
     async def test_llm_result_fills_gaps(self, extraction_service):
         """LLM이 정규식 못 찾은 필드 채움."""
-        extraction_service.provider.extract_fields = AsyncMock(return_value=ExtractionResult(
-            success=True,
-            fields={"line": "L1", "part_no": "P1", "lot": "LOT1", "result": "PASS"},
-            model_used="claude",
-        ))
+        extraction_service.provider.extract_fields = AsyncMock(
+            return_value=ExtractionResult(
+                success=True,
+                fields={"line": "L1", "part_no": "P1", "lot": "LOT1", "result": "PASS"},
+                model_used="claude",
+            )
+        )
 
         user_input = "작업번호: WO-001"  # 정규식은 wo_no만 찾음
 
@@ -399,11 +419,13 @@ class TestExtract:
     @pytest.mark.asyncio
     async def test_with_ocr_text(self, extraction_service):
         """OCR 텍스트 포함."""
-        extraction_service.provider.extract_fields = AsyncMock(return_value=ExtractionResult(
-            success=True,
-            fields={"wo_no": "WO-001"},
-            model_used="claude",
-        ))
+        extraction_service.provider.extract_fields = AsyncMock(
+            return_value=ExtractionResult(
+                success=True,
+                fields={"wo_no": "WO-001"},
+                model_used="claude",
+            )
+        )
 
         await extraction_service.extract(
             user_input="Please check this",
@@ -418,6 +440,7 @@ class TestExtract:
 # =============================================================================
 # 프롬프트 테스트
 # =============================================================================
+
 
 class TestPromptTemplate:
     """프롬프트 템플릿 테스트."""

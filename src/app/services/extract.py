@@ -197,9 +197,9 @@ class ExtractionService:
             fields = self.definition.get("fields", {})
             sorted_fields = sorted(fields.items())
             ruleset_str = str(sorted_fields)
-            self._regex_ruleset_hash = hashlib.sha256(
-                ruleset_str.encode()
-            ).hexdigest()[:12]
+            self._regex_ruleset_hash = hashlib.sha256(ruleset_str.encode()).hexdigest()[
+                :12
+            ]
         return self._regex_ruleset_hash
 
     def _default_prompt(self) -> str:

@@ -35,10 +35,12 @@ def get_jobs_root(request: Request) -> Path:
 # Page Routes (HTML)
 # =============================================================================
 
+
 @router.get("", response_class=HTMLResponse)
 async def jobs_page(request: Request) -> HTMLResponse:
     """작업 목록 화면."""
-    return HTMLResponse(content="""
+    return HTMLResponse(
+        content="""
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -63,13 +65,15 @@ async def jobs_page(request: Request) -> HTMLResponse:
     </div>
 </body>
 </html>
-    """)
+    """
+    )
 
 
 @router.get("/{job_id}", response_class=HTMLResponse)
 async def job_detail_page(request: Request, job_id: str) -> HTMLResponse:
     """작업 상세 화면."""
-    return HTMLResponse(content=f"""
+    return HTMLResponse(
+        content=f"""
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -94,12 +98,14 @@ async def job_detail_page(request: Request, job_id: str) -> HTMLResponse:
     </div>
 </body>
 </html>
-    """)
+    """
+    )
 
 
 # =============================================================================
 # API Routes
 # =============================================================================
+
 
 @api_router.get("")
 async def list_jobs(
@@ -146,7 +152,7 @@ async def list_jobs(
 
     # 페이지네이션
     total = len(jobs)
-    jobs = jobs[offset:offset + limit]
+    jobs = jobs[offset : offset + limit]
 
     if not jobs:
         return HTMLResponse(content="<p class='empty'>작업이 없습니다.</p>")
@@ -160,8 +166,8 @@ async def list_jobs(
 
         html += f"""
         <li>
-            <a href="/jobs/{job['job_id']}">
-                <strong>{job['job_id']}</strong>
+            <a href="/jobs/{job["job_id"]}">
+                <strong>{job["job_id"]}</strong>
                 <span class="wo-no">WO: {wo_no}</span>
                 <span class="created">{created}</span>
                 <span class="status">{has_files}</span>
@@ -183,7 +189,10 @@ async def get_job(
     job_dir = jobs_root / job_id
 
     if not job_dir.exists():
-        raise HTTPException(status_code=404, detail={"code": "JOB_NOT_FOUND", "message": f"Job '{job_id}' not found"})
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "JOB_NOT_FOUND", "message": f"Job '{job_id}' not found"},
+        )
 
     # job.json 읽기
     job_json_path = job_dir / JOB_JSON_FILENAME
@@ -202,11 +211,13 @@ async def get_job(
         for f in sorted(deliverables_dir.iterdir()):
             if f.is_file():
                 stat = f.stat()
-                deliverables.append({
-                    "name": f.name,
-                    "size": stat.st_size,
-                    "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
-                })
+                deliverables.append(
+                    {
+                        "name": f.name,
+                        "size": stat.st_size,
+                        "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                    }
+                )
 
     # HTML 렌더링
     html = "<div class='job-info'>"
@@ -229,12 +240,18 @@ async def get_job(
         html += "<ul class='file-list'>"
         for f in deliverables:
             size_kb = f["size"] / 1024
-            icon = "📄" if f["name"].endswith(".docx") else "📊" if f["name"].endswith(".xlsx") else "📁"
+            icon = (
+                "📄"
+                if f["name"].endswith(".docx")
+                else "📊"
+                if f["name"].endswith(".xlsx")
+                else "📁"
+            )
             html += f"""
             <li>
-                {icon} <span class="filename">{f['name']}</span>
+                {icon} <span class="filename">{f["name"]}</span>
                 <span class="size">{size_kb:.1f} KB</span>
-                <a href="/api/jobs/{job_id}/download/{f['name']}" class="button small">다운로드</a>
+                <a href="/api/jobs/{job_id}/download/{f["name"]}" class="button small">다운로드</a>
             </li>
             """
         html += "</ul>"
@@ -264,12 +281,21 @@ async def download_file(
     job_dir = jobs_root / job_id
 
     if not job_dir.exists():
-        raise HTTPException(status_code=404, detail={"code": "JOB_NOT_FOUND", "message": f"Job '{job_id}' not found"})
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "JOB_NOT_FOUND", "message": f"Job '{job_id}' not found"},
+        )
 
     file_path = job_dir / JOB_DELIVERABLES_DIR / filename
 
     if not file_path.exists():
-        raise HTTPException(status_code=404, detail={"code": "FILE_NOT_FOUND", "message": f"File '{filename}' not found"})
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "FILE_NOT_FOUND",
+                "message": f"File '{filename}' not found",
+            },
+        )
 
     # 경로 순회 공격 방지 (symlink 포함)
     # resolve()는 symlink를 따라가므로, 실제 경로가 job_dir 내부인지 확인
@@ -277,11 +303,20 @@ async def download_file(
         resolved = file_path.resolve(strict=True)
         resolved.relative_to(job_dir.resolve())
     except (ValueError, OSError):
-        raise HTTPException(status_code=400, detail={"code": "INVALID_PATH", "message": "Invalid file path"}) from None
+        raise HTTPException(
+            status_code=400,
+            detail={"code": "INVALID_PATH", "message": "Invalid file path"},
+        ) from None
 
     # symlink 자체를 명시적으로 차단
     if file_path.is_symlink():
-        raise HTTPException(status_code=400, detail={"code": "SYMLINK_NOT_ALLOWED", "message": "Symbolic links are not allowed"})
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "SYMLINK_NOT_ALLOWED",
+                "message": "Symbolic links are not allowed",
+            },
+        )
 
     # MIME 타입 결정
     media_type = get_mime_type(filename)
@@ -303,11 +338,17 @@ async def download_zip(
     job_dir = jobs_root / job_id
 
     if not job_dir.exists():
-        raise HTTPException(status_code=404, detail={"code": "JOB_NOT_FOUND", "message": f"Job '{job_id}' not found"})
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "JOB_NOT_FOUND", "message": f"Job '{job_id}' not found"},
+        )
 
     deliverables_dir = job_dir / JOB_DELIVERABLES_DIR
     if not deliverables_dir.exists():
-        raise HTTPException(status_code=404, detail={"code": "NO_FILES", "message": "No deliverables to download"})
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "NO_FILES", "message": "No deliverables to download"},
+        )
 
     # ZIP 파일 생성 (메모리에서)
     # 보안: deliverables만 포함, symlink 제외

@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 # Safe Move (Archive)
 # =============================================================================
 
+
 def safe_move(src: Path, dst_dir: Path) -> MoveResult:
     """
     안전한 파일 이동 (아카이브용).
@@ -86,10 +87,7 @@ def safe_move(src: Path, dst_dir: Path) -> MoveResult:
             os.close(fd)
     except OSError as e:
         fsync_warning = True
-        logger.warning(
-            "fsync failed for %s: %s (data preserved)",
-            dst, e
-        )
+        logger.warning("fsync failed for %s: %s (data preserved)", dst, e)
 
     # 원본 삭제 (복사 성공 후에만)
     try:
@@ -115,6 +113,7 @@ def safe_move(src: Path, dst_dir: Path) -> MoveResult:
 # =============================================================================
 # Photo Slot Selection
 # =============================================================================
+
 
 def load_photo_slots(definition_path: Path) -> list[PhotoSlot]:
     """
@@ -287,9 +286,11 @@ def copy_to_derived(
 # Photo Service (웹 플로우 통합용)
 # =============================================================================
 
+
 @dataclass
 class PhotoValidationResult:
     """사진 검증 결과."""
+
     valid: bool
     missing_required: list[str] = field(default_factory=list)
     overridable: list[str] = field(default_factory=list)
@@ -514,12 +515,14 @@ class PhotoService:
                 # required + override_allowed=false → 즉시 실패
                 result.valid = False
                 result.missing_required.append(slot.key)
-                result.processing_logs.append(PhotoProcessingLog(
-                    slot_id=slot.key,
-                    action="missing",
-                    warning=str(e),
-                    timestamp=timestamp,
-                ))
+                result.processing_logs.append(
+                    PhotoProcessingLog(
+                        slot_id=slot.key,
+                        action="missing",
+                        warning=str(e),
+                        timestamp=timestamp,
+                    )
+                )
                 continue
 
             if warning:
@@ -535,7 +538,9 @@ class PhotoService:
                     trash_run_dir = self.trash_dir / archive_folder
                     archive_result = safe_move(existing_derived, trash_run_dir)
                     if archive_result.success:
-                        archived_path = str(archive_result.dst) if archive_result.dst else None
+                        archived_path = (
+                            str(archive_result.dst) if archive_result.dst else None
+                        )
 
                 # 새 derived 생성
                 derived_path = copy_to_derived(
@@ -545,52 +550,62 @@ class PhotoService:
                 )
 
                 result.mapped_slots[slot.key] = derived_path
-                result.processing_logs.append(PhotoProcessingLog(
-                    slot_id=slot.key,
-                    action="mapped",
-                    raw_path=str(selected_path),
-                    derived_path=str(derived_path),
-                    archived_path=archived_path,
-                    warning=warning,
-                    timestamp=timestamp,
-                ))
+                result.processing_logs.append(
+                    PhotoProcessingLog(
+                        slot_id=slot.key,
+                        action="mapped",
+                        raw_path=str(selected_path),
+                        derived_path=str(derived_path),
+                        archived_path=archived_path,
+                        warning=warning,
+                        timestamp=timestamp,
+                    )
+                )
 
             else:
                 # 파일 없음
                 if slot.required:
                     if slot.override_allowed and slot.key in overrides:
                         # Override 적용
-                        result.processing_logs.append(PhotoProcessingLog(
-                            slot_id=slot.key,
-                            action="override",
-                            override_reason=overrides[slot.key],
-                            timestamp=timestamp,
-                        ))
+                        result.processing_logs.append(
+                            PhotoProcessingLog(
+                                slot_id=slot.key,
+                                action="override",
+                                override_reason=overrides[slot.key],
+                                timestamp=timestamp,
+                            )
+                        )
                     elif slot.override_allowed:
                         # Override 가능하지만 사유 없음
                         result.valid = False
                         result.overridable.append(slot.key)
-                        result.processing_logs.append(PhotoProcessingLog(
-                            slot_id=slot.key,
-                            action="missing_overridable",
-                            timestamp=timestamp,
-                        ))
+                        result.processing_logs.append(
+                            PhotoProcessingLog(
+                                slot_id=slot.key,
+                                action="missing_overridable",
+                                timestamp=timestamp,
+                            )
+                        )
                     else:
                         # Override 불가
                         result.valid = False
                         result.missing_required.append(slot.key)
-                        result.processing_logs.append(PhotoProcessingLog(
-                            slot_id=slot.key,
-                            action="missing",
-                            timestamp=timestamp,
-                        ))
+                        result.processing_logs.append(
+                            PhotoProcessingLog(
+                                slot_id=slot.key,
+                                action="missing",
+                                timestamp=timestamp,
+                            )
+                        )
                 else:
                     # 선택 슬롯 누락 → 경고만
-                    result.processing_logs.append(PhotoProcessingLog(
-                        slot_id=slot.key,
-                        action="skipped",
-                        timestamp=timestamp,
-                    ))
+                    result.processing_logs.append(
+                        PhotoProcessingLog(
+                            slot_id=slot.key,
+                            action="skipped",
+                            timestamp=timestamp,
+                        )
+                    )
 
         return result
 

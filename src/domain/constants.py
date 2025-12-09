@@ -103,5 +103,6 @@ def get_mime_type(filename: str) -> str:
         MIME 타입 문자열 (알 수 없으면 octet-stream)
     """
     import os
+
     ext = os.path.splitext(filename)[1].lower()
     return MIME_TYPES.get(ext, "application/octet-stream")

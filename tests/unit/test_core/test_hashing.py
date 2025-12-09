@@ -25,6 +25,7 @@ from src.core.hashing import (
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def sample_definition(tmp_path: Path) -> Path:
     """테스트용 definition.yaml 생성."""
@@ -62,6 +63,7 @@ def hash_config() -> dict:
 # load_field_types 테스트
 # =============================================================================
 
+
 class TestLoadFieldTypes:
     """load_field_types 함수 테스트."""
 
@@ -92,6 +94,7 @@ class TestLoadFieldTypes:
 # =============================================================================
 # get_excluded_fields 테스트
 # =============================================================================
+
 
 class TestGetExcludedFields:
     """get_excluded_fields 함수 테스트."""
@@ -124,6 +127,7 @@ class TestGetExcludedFields:
 # =============================================================================
 # compute_packet_hash 테스트 (재현성)
 # =============================================================================
+
 
 class TestComputePacketHash:
     """compute_packet_hash 함수 테스트."""
@@ -242,6 +246,7 @@ class TestComputePacketHash:
 # compute_packet_full_hash 테스트
 # =============================================================================
 
+
 class TestComputePacketFullHash:
     """compute_packet_full_hash 함수 테스트."""
 
@@ -279,6 +284,7 @@ class TestComputePacketFullHash:
 # =============================================================================
 # compute_file_hash 테스트
 # =============================================================================
+
 
 class TestComputeFileHash:
     """compute_file_hash 함수 테스트."""

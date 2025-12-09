@@ -37,6 +37,7 @@ from src.app.services.intake import IntakeService
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def job_dir(tmp_path: Path) -> Path:
     """테스트용 job 디렉터리."""
@@ -96,6 +97,7 @@ def sample_prompt_template():
 # =============================================================================
 # TC1: LLM raw output 저장 확인
 # =============================================================================
+
 
 class TestLLMRawOutputStorage:
     """LLM raw output 저장 테스트."""
@@ -180,6 +182,7 @@ class TestLLMRawOutputStorage:
 # TC2: prompt 저장 확인
 # =============================================================================
 
+
 class TestPromptStorage:
     """prompt_used 저장 테스트."""
 
@@ -255,6 +258,7 @@ class TestPromptStorage:
 # TC3: 파싱 실패해도 raw 저장
 # =============================================================================
 
+
 class TestParseFailureStoresRaw:
     """파싱 실패 시에도 raw 저장 테스트."""
 
@@ -326,6 +330,7 @@ class TestParseFailureStoresRaw:
 # TC4: OCR raw 저장 확인 (선택 - 현재 구현에서는 OCRResult에 raw 없음)
 # =============================================================================
 
+
 class TestOCRRawStorage:
     """OCR raw 저장 테스트 (현재 구현 상태 확인)."""
 
@@ -352,6 +357,7 @@ class TestOCRRawStorage:
 # =============================================================================
 # TC5: 재현성 검증
 # =============================================================================
+
 
 class TestReproducibility:
     """재현성 검증 테스트."""
@@ -436,6 +442,7 @@ class TestReproducibility:
 # TC6: RunLog에 raw 없음 확인 (보안)
 # =============================================================================
 
+
 class TestRunLogSecurity:
     """RunLog 보안 테스트 - raw 데이터 미포함."""
 
@@ -501,13 +508,15 @@ class TestRunLogSecurity:
 
         # intake_session에 raw 저장
         intake_service.create_session()
-        intake_service.add_extraction_result(ExtractionResult(
-            success=True,
-            fields={"wo_no": "WO-001"},
-            model_used="claude",
-            llm_raw_output='{"fields": {"wo_no": "WO-001"}}',
-            prompt_used="Full prompt here...",
-        ))
+        intake_service.add_extraction_result(
+            ExtractionResult(
+                success=True,
+                fields={"wo_no": "WO-001"},
+                model_used="claude",
+                llm_raw_output='{"fields": {"wo_no": "WO-001"}}',
+                prompt_used="Full prompt here...",
+            )
+        )
 
         # intake_session.json 확인 - raw 있음
         intake_data = json.loads(
@@ -533,6 +542,7 @@ class TestRunLogSecurity:
 # 추가: 정규식 추출 시 raw 없음 확인
 # =============================================================================
 
+
 class TestRegexExtractionNoRaw:
     """정규식 추출 시 raw 데이터 없음 테스트."""
 
@@ -543,7 +553,8 @@ class TestRegexExtractionNoRaw:
 
         # definition.yaml 생성
         definition_path = tmp_path / "definition.yaml"
-        definition_path.write_text("""
+        definition_path.write_text(
+            """
 fields:
   wo_no:
     type: token
@@ -565,7 +576,9 @@ fields:
     type: token
     importance: critical
     aliases: ["Result"]
-""", encoding="utf-8")
+""",
+            encoding="utf-8",
+        )
 
         prompts_dir = tmp_path / "prompts"
         prompts_dir.mkdir()
@@ -596,6 +609,7 @@ fields:
 # =============================================================================
 # TC7: 조건부 재현성 메타데이터 테스트
 # =============================================================================
+
 
 class TestConditionalReproducibilityMetadata:
     """조건부 재현성 메타데이터 테스트.
@@ -730,6 +744,7 @@ class TestConditionalReproducibilityMetadata:
 # =============================================================================
 # TC8: Raw Storage Level 테스트
 # =============================================================================
+
 
 class TestRawStorageLevel:
     """storage_level에 따른 raw 저장 동작 테스트."""
@@ -871,7 +886,7 @@ class TestRawStorageLevel:
         )
 
         # 큰 응답 생성
-        large_response = '{"fields": {' + '"key": "value", ' * 50 + '}}'
+        large_response = '{"fields": {' + '"key": "value", ' * 50 + "}}"
         mock_response = MagicMock()
         mock_response.content = [MagicMock()]
         mock_response.content[0].text = large_response
@@ -899,6 +914,7 @@ class TestRawStorageLevel:
 # =============================================================================
 # TC9: 프롬프트 분리 저장 테스트
 # =============================================================================
+
 
 class TestPromptSeparation:
     """프롬프트 분리 저장 테스트 (보안)."""

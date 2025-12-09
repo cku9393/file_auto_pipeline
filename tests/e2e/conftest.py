@@ -39,19 +39,25 @@ IS_CI = os.getenv("CI") == "true"
 # 마스킹할 패턴들 (API 키, 토큰, 비밀번호 등)
 SENSITIVE_PATTERNS = [
     # API 키 패턴
-    (r'(api[_-]?key|apikey)["\']?\s*[:=]\s*["\']?([a-zA-Z0-9_-]{20,})', r'\1: [MASKED]'),
-    (r'(sk-[a-zA-Z0-9]{20,})', r'[MASKED_API_KEY]'),  # OpenAI 스타일
-    (r'(anthropic-[a-zA-Z0-9]{20,})', r'[MASKED_API_KEY]'),  # Anthropic 스타일
+    (
+        r'(api[_-]?key|apikey)["\']?\s*[:=]\s*["\']?([a-zA-Z0-9_-]{20,})',
+        r"\1: [MASKED]",
+    ),
+    (r"(sk-[a-zA-Z0-9]{20,})", r"[MASKED_API_KEY]"),  # OpenAI 스타일
+    (r"(anthropic-[a-zA-Z0-9]{20,})", r"[MASKED_API_KEY]"),  # Anthropic 스타일
     # Bearer 토큰
-    (r'(Bearer\s+)([a-zA-Z0-9._-]{20,})', r'\1[MASKED_TOKEN]'),
+    (r"(Bearer\s+)([a-zA-Z0-9._-]{20,})", r"\1[MASKED_TOKEN]"),
     # Authorization 헤더
-    (r'(authorization)["\']?\s*[:=]\s*["\']?([^"\'>\s]{20,})', r'\1: [MASKED]'),
+    (r'(authorization)["\']?\s*[:=]\s*["\']?([^"\'>\s]{20,})', r"\1: [MASKED]"),
     # 비밀번호
-    (r'(password|passwd|pwd)["\']?\s*[:=]\s*["\']?([^"\'>\s]+)', r'\1: [MASKED]'),
+    (r'(password|passwd|pwd)["\']?\s*[:=]\s*["\']?([^"\'>\s]+)', r"\1: [MASKED]"),
     # 세션/쿠키
-    (r'(session[_-]?id|sessionid)["\']?\s*[:=]\s*["\']?([a-zA-Z0-9_-]{16,})', r'\1: [MASKED]'),
+    (
+        r'(session[_-]?id|sessionid)["\']?\s*[:=]\s*["\']?([a-zA-Z0-9_-]{16,})',
+        r"\1: [MASKED]",
+    ),
     # JWT 토큰 (eyJ로 시작)
-    (r'(eyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+)', r'[MASKED_JWT]'),
+    (r"(eyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+)", r"[MASKED_JWT]"),
 ]
 
 
@@ -61,6 +67,7 @@ def mask_sensitive_data(content: str) -> str:
     for pattern, replacement in SENSITIVE_PATTERNS:
         masked = re.sub(pattern, replacement, masked, flags=re.IGNORECASE)
     return masked
+
 
 # =============================================================================
 # Playwright 기본 설정
@@ -97,12 +104,8 @@ def page(context, page: Page) -> Page:
 
     # 콘솔 로그 수집
     console_logs = []
-    page.on("console", lambda msg: console_logs.append(
-        f"[{msg.type}] {msg.text}"
-    ))
-    page.on("pageerror", lambda err: console_logs.append(
-        f"[PAGE_ERROR] {err}"
-    ))
+    page.on("console", lambda msg: console_logs.append(f"[{msg.type}] {msg.text}"))
+    page.on("pageerror", lambda err: console_logs.append(f"[PAGE_ERROR] {err}"))
 
     # 테스트에서 접근 가능하도록 저장
     page._console_logs = console_logs

@@ -20,6 +20,7 @@ from .xlsx_extract import XlsxExtractor
 @dataclass
 class GoldenScenario:
     """A golden test scenario."""
+
     name: str
     path: Path
     input_packet: dict[str, Any]

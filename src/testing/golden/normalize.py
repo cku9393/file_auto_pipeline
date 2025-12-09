@@ -18,6 +18,7 @@ from typing import Any
 @dataclass
 class NormalizationStats:
     """Statistics about normalization replacements."""
+
     uuid_count: int = 0
     timestamp_count: int = 0
     date_count: int = 0
@@ -38,6 +39,7 @@ class NormalizationStats:
 
 class NormalizationWarning(UserWarning):
     """Warning for suspicious normalization patterns."""
+
     pass
 
 
@@ -55,18 +57,16 @@ class Normalizer:
 
     # ISO 8601 timestamp pattern
     TIMESTAMP_PATTERN = re.compile(
-        r'\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?'
+        r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?"
     )
 
     # UUID pattern (v4)
     UUID_PATTERN = re.compile(
-        r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
+        r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
     )
 
     # Date patterns (YYYY-MM-DD, YYYY/MM/DD, etc.)
-    DATE_PATTERN = re.compile(
-        r'\d{4}[-/]\d{2}[-/]\d{2}'
-    )
+    DATE_PATTERN = re.compile(r"\d{4}[-/]\d{2}[-/]\d{2}")
 
     # Default thresholds for warnings
     DEFAULT_UUID_THRESHOLD = 20
@@ -102,9 +102,21 @@ class Normalizer:
         self.exclude_fields = exclude_fields or set()
 
         # Thresholds for warnings
-        self.uuid_threshold = uuid_threshold if uuid_threshold is not None else self.DEFAULT_UUID_THRESHOLD
-        self.timestamp_threshold = timestamp_threshold if timestamp_threshold is not None else self.DEFAULT_TS_THRESHOLD
-        self.date_threshold = date_threshold if date_threshold is not None else self.DEFAULT_DATE_THRESHOLD
+        self.uuid_threshold = (
+            uuid_threshold
+            if uuid_threshold is not None
+            else self.DEFAULT_UUID_THRESHOLD
+        )
+        self.timestamp_threshold = (
+            timestamp_threshold
+            if timestamp_threshold is not None
+            else self.DEFAULT_TS_THRESHOLD
+        )
+        self.date_threshold = (
+            date_threshold
+            if date_threshold is not None
+            else self.DEFAULT_DATE_THRESHOLD
+        )
 
         # Track replacement counts
         self._stats = NormalizationStats()
@@ -185,9 +197,9 @@ class Normalizer:
         # Normalize whitespace first
         if self.normalize_whitespace:
             # Replace various whitespace with regular space
-            result = re.sub(r'[\t\r\n]+', ' ', result)
+            result = re.sub(r"[\t\r\n]+", " ", result)
             # Collapse multiple spaces to one
-            result = re.sub(r' {2,}', ' ', result)
+            result = re.sub(r" {2,}", " ", result)
             # Strip leading/trailing whitespace
             result = result.strip()
 
@@ -196,8 +208,8 @@ class Normalizer:
             ts_matches = len(self.TIMESTAMP_PATTERN.findall(result))
             date_matches = len(self.DATE_PATTERN.findall(result))
 
-            result = self.TIMESTAMP_PATTERN.sub('<TS>', result)
-            result = self.DATE_PATTERN.sub('<DATE>', result)
+            result = self.TIMESTAMP_PATTERN.sub("<TS>", result)
+            result = self.DATE_PATTERN.sub("<DATE>", result)
 
             self._stats.timestamp_count += ts_matches
             self._stats.date_count += date_matches
@@ -205,7 +217,7 @@ class Normalizer:
         # Replace UUIDs (with counting)
         if self.normalize_uuids:
             uuid_matches = len(self.UUID_PATTERN.findall(result))
-            result = self.UUID_PATTERN.sub('<UUID>', result)
+            result = self.UUID_PATTERN.sub("<UUID>", result)
             self._stats.uuid_count += uuid_matches
 
         return result
@@ -233,7 +245,7 @@ class Normalizer:
             normalized = dec.normalize()
 
             # Handle scientific notation edge cases
-            if 'E' in str(normalized):
+            if "E" in str(normalized):
                 # Convert back to regular notation if reasonable
                 return f"{float(normalized):.10g}"
 

@@ -21,6 +21,7 @@ from src.app.providers.gemini import (
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def provider():
     """기본 Gemini provider."""
@@ -44,6 +45,7 @@ def provider_no_fallback():
 # =============================================================================
 # 초기화 테스트
 # =============================================================================
+
 
 class TestGeminiOCRProviderInit:
     """GeminiOCRProvider 초기화 테스트."""
@@ -85,6 +87,7 @@ class TestGeminiOCRProviderInit:
 # Exception Mapping 테스트
 # =============================================================================
 
+
 class TestExceptionMapping:
     """예외 매핑 테스트."""
 
@@ -98,10 +101,7 @@ class TestExceptionMapping:
         """REJECT_IMMEDIATELY 정의 확인."""
         assert isinstance(REJECT_IMMEDIATELY, tuple)
 
-    @pytest.mark.skipif(
-        not FALLBACK_ERRORS,
-        reason="google-api-core not installed"
-    )
+    @pytest.mark.skipif(not FALLBACK_ERRORS, reason="google-api-core not installed")
     def test_fallback_errors_include_correct_exceptions(self):
         """FALLBACK_ERRORS에 올바른 예외 포함."""
         from google.api_core.exceptions import (
@@ -114,10 +114,7 @@ class TestExceptionMapping:
         assert ServiceUnavailable in FALLBACK_ERRORS
         assert ResourceExhausted in FALLBACK_ERRORS
 
-    @pytest.mark.skipif(
-        not REJECT_IMMEDIATELY,
-        reason="google-api-core not installed"
-    )
+    @pytest.mark.skipif(not REJECT_IMMEDIATELY, reason="google-api-core not installed")
     def test_reject_immediately_include_correct_exceptions(self):
         """REJECT_IMMEDIATELY에 올바른 예외 포함."""
         from google.api_core.exceptions import (
@@ -134,6 +131,7 @@ class TestExceptionMapping:
 # =============================================================================
 # MIME Type 정규화 테스트
 # =============================================================================
+
 
 class TestNormalizeMimeType:
     """MIME 타입 정규화 테스트."""
@@ -170,6 +168,7 @@ class TestNormalizeMimeType:
 # Confidence 추정 테스트
 # =============================================================================
 
+
 class TestEstimateConfidence:
     """신뢰도 추정 테스트."""
 
@@ -199,6 +198,7 @@ class TestEstimateConfidence:
 # extract_text 테스트 (Mock)
 # =============================================================================
 
+
 class TestExtractText:
     """extract_text 메서드 테스트."""
 
@@ -225,10 +225,7 @@ class TestExtractText:
         assert result.fallback_triggered is False
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(
-        not FALLBACK_ERRORS,
-        reason="google-api-core not installed"
-    )
+    @pytest.mark.skipif(not FALLBACK_ERRORS, reason="google-api-core not installed")
     async def test_fallback_on_service_unavailable(self, provider):
         """ServiceUnavailable → fallback 시도."""
         from google.api_core.exceptions import ServiceUnavailable
@@ -256,10 +253,7 @@ class TestExtractText:
         assert result.fallback_triggered is True
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(
-        not FALLBACK_ERRORS,
-        reason="google-api-core not installed"
-    )
+    @pytest.mark.skipif(not FALLBACK_ERRORS, reason="google-api-core not installed")
     async def test_fallback_on_resource_exhausted(self, provider):
         """ResourceExhausted (쿼터/레이트리밋) → fallback 시도."""
         from google.api_core.exceptions import ResourceExhausted
@@ -284,10 +278,7 @@ class TestExtractText:
         assert result.model_used == "gemini-2.5-flash"
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(
-        not REJECT_IMMEDIATELY,
-        reason="google-api-core not installed"
-    )
+    @pytest.mark.skipif(not REJECT_IMMEDIATELY, reason="google-api-core not installed")
     async def test_reject_on_invalid_argument(self, provider):
         """InvalidArgument → 즉시 reject (fallback 안 함)."""
         from google.api_core.exceptions import InvalidArgument
@@ -306,10 +297,7 @@ class TestExtractText:
         assert exc_info.value.code == "AUTH_OR_INPUT_ERROR"
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(
-        not REJECT_IMMEDIATELY,
-        reason="google-api-core not installed"
-    )
+    @pytest.mark.skipif(not REJECT_IMMEDIATELY, reason="google-api-core not installed")
     async def test_reject_on_permission_denied(self, provider):
         """PermissionDenied → 즉시 reject."""
         from google.api_core.exceptions import PermissionDenied
@@ -328,10 +316,7 @@ class TestExtractText:
         assert exc_info.value.code == "AUTH_OR_INPUT_ERROR"
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(
-        not FALLBACK_ERRORS,
-        reason="google-api-core not installed"
-    )
+    @pytest.mark.skipif(not FALLBACK_ERRORS, reason="google-api-core not installed")
     async def test_no_fallback_configured_raises_error(self, provider_no_fallback):
         """Fallback 없을 때 1차 실패 → 에러."""
         from google.api_core.exceptions import ServiceUnavailable
@@ -350,10 +335,7 @@ class TestExtractText:
         assert exc_info.value.code == "NO_FALLBACK"
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(
-        not FALLBACK_ERRORS,
-        reason="google-api-core not installed"
-    )
+    @pytest.mark.skipif(not FALLBACK_ERRORS, reason="google-api-core not installed")
     async def test_both_primary_and_fallback_fail(self, provider):
         """1차 + Fallback 모두 실패."""
         from google.api_core.exceptions import ServiceUnavailable
@@ -391,6 +373,7 @@ class TestExtractText:
 # =============================================================================
 # Client 초기화 테스트
 # =============================================================================
+
 
 class TestGetClient:
     """_get_client 메서드 테스트."""

@@ -24,6 +24,7 @@ from src.app.main import app
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def client():
     """FastAPI TestClient."""
@@ -85,7 +86,13 @@ def mock_session_with_extraction(tmp_path: Path, client):
                 "remark": "테스트 비고",
             },
             "measurements": [
-                {"item": "1", "spec": "10.0", "measured": "10.1", "unit": "mm", "result": "PASS"},
+                {
+                    "item": "1",
+                    "spec": "10.0",
+                    "measured": "10.1",
+                    "unit": "mm",
+                    "result": "PASS",
+                },
             ],
             "missing_fields": [],
             "warnings": [],
@@ -117,6 +124,7 @@ def mock_session_with_extraction(tmp_path: Path, client):
 # =============================================================================
 # Page Routes (HTML)
 # =============================================================================
+
 
 class TestJobsPage:
     """작업 이력 페이지 테스트."""
@@ -161,6 +169,7 @@ class TestJobDetailPage:
 # POST /api/generate
 # =============================================================================
 
+
 class TestGenerateDocument:
     """문서 생성 요청 테스트."""
 
@@ -198,6 +207,7 @@ class TestGenerateDocument:
         assert job_json_path.exists()
 
         import json
+
         job_data = json.loads(job_json_path.read_text(encoding="utf-8"))
         assert job_data["job_id"] == ctx["job_id"]
         assert job_data["wo_no"] == "WO-2024-001"
@@ -291,6 +301,7 @@ class TestGenerateDocument:
         assert len(run_logs) >= 1
 
         import json
+
         run_log_data = json.loads(run_logs[0].read_text(encoding="utf-8"))
         assert run_log_data["result"] == "failed"
         assert run_log_data["error_code"] is not None
@@ -299,6 +310,7 @@ class TestGenerateDocument:
 # =============================================================================
 # GET /api/generate/jobs
 # =============================================================================
+
 
 class TestListJobs:
     """작업 목록 API 테스트."""
@@ -328,6 +340,7 @@ class TestListJobs:
 # GET /api/generate/jobs/{job_id}
 # =============================================================================
 
+
 class TestGetJobDetail:
     """작업 상세 API 테스트."""
 
@@ -355,6 +368,7 @@ class TestGetJobDetail:
 # GET /api/generate/jobs/{job_id}/download/{filename}
 # =============================================================================
 
+
 class TestDownloadFile:
     """파일 다운로드 테스트."""
 
@@ -367,9 +381,7 @@ class TestDownloadFile:
     def test_download_file_with_existing_job(self, client, sample_job_dir):
         """실제 파일 다운로드."""
         # jobs_root를 임시 디렉터리로 패치
-        with patch.object(
-            client.app.state, "jobs_root", sample_job_dir.parent
-        ):
+        with patch.object(client.app.state, "jobs_root", sample_job_dir.parent):
             response = client.get(
                 f"/api/generate/jobs/{sample_job_dir.name}/download/report.docx"
             )
@@ -382,6 +394,7 @@ class TestDownloadFile:
 # =============================================================================
 # GET /api/generate/jobs/{job_id}/download (ZIP)
 # =============================================================================
+
 
 class TestDownloadAll:
     """전체 다운로드 (ZIP) 테스트."""
@@ -396,6 +409,7 @@ class TestDownloadAll:
 # =============================================================================
 # Error Cases
 # =============================================================================
+
 
 class TestGenerateErrorCases:
     """에러 케이스 테스트."""
@@ -425,6 +439,7 @@ class TestGenerateErrorCases:
 # =============================================================================
 # Navigation & Links
 # =============================================================================
+
 
 class TestNavigation:
     """네비게이션 테스트."""

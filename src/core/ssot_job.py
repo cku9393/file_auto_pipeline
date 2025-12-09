@@ -42,6 +42,7 @@ LOCK_META_FILENAME = "lock.meta"
 # Lock Management
 # =============================================================================
 
+
 def _get_current_hostname() -> str:
     """현재 호스트명 반환 (실패 시 'unknown')."""
     try:
@@ -99,7 +100,9 @@ def _is_process_alive(pid: int) -> bool:
         return False
 
 
-def _is_stale_lock(lock_dir: Path, threshold_seconds: float = STALE_LOCK_THRESHOLD_SECONDS) -> bool:
+def _is_stale_lock(
+    lock_dir: Path, threshold_seconds: float = STALE_LOCK_THRESHOLD_SECONDS
+) -> bool:
     """
     락 디렉토리가 stale(오래된) 상태인지 확인.
 
@@ -282,6 +285,7 @@ def job_lock(job_dir: Path, config: dict) -> Generator[Path, None, None]:
 # Atomic Write
 # =============================================================================
 
+
 def _fsync_dir(dir_path: Path) -> None:
     """
     디렉토리 fsync (가능한 환경에서).
@@ -363,6 +367,7 @@ def atomic_write_json(path: Path, data: dict) -> None:
 # Mismatch Verification
 # =============================================================================
 
+
 def verify_mismatch(existing: dict, current: dict) -> None:
     """
     기존 job.json과 현재 packet의 핵심 필드 일치 확인.
@@ -389,6 +394,7 @@ def verify_mismatch(existing: dict, current: dict) -> None:
 # =============================================================================
 # Job JSON Operations
 # =============================================================================
+
 
 def load_job_json(job_json_path: Path) -> dict[str, Any]:
     """

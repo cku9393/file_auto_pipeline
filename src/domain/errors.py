@@ -46,6 +46,7 @@ class PolicyRejectError(Exception):
 # Error Codes (spec.md / runbook.md 참조)
 # =============================================================================
 
+
 class ErrorCodes:
     """에러 코드 상수. 새 코드 추가 시 runbook.md에도 복구 방법 추가."""
 
@@ -71,7 +72,7 @@ class ErrorCodes:
 
     # === Override Reason 품질 검증 ===
     INVALID_OVERRIDE_REASON = "INVALID_OVERRIDE_REASON"  # 금지 토큰, 최소 길이 미달
-    INVALID_OVERRIDE_CODE = "INVALID_OVERRIDE_CODE"      # 유효하지 않은 reason_code
+    INVALID_OVERRIDE_CODE = "INVALID_OVERRIDE_CODE"  # 유효하지 않은 reason_code
 
     # === Render ===
     TEMPLATE_NOT_FOUND = "TEMPLATE_NOT_FOUND"

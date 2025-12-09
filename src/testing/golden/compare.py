@@ -11,6 +11,7 @@ from typing import Any
 @dataclass
 class DiffResult:
     """Result of comparing two structures."""
+
     match: bool
     path: str = ""
     expected: Any = None
@@ -49,13 +50,15 @@ def compare_structures(
         # Allow None vs missing
         if expected is None and actual is None:
             return []
-        diffs.append(DiffResult(
-            match=False,
-            path=path,
-            expected=type(expected).__name__,
-            actual=type(actual).__name__,
-            message="Type mismatch",
-        ))
+        diffs.append(
+            DiffResult(
+                match=False,
+                path=path,
+                expected=type(expected).__name__,
+                actual=type(actual).__name__,
+                message="Type mismatch",
+            )
+        )
         return diffs
 
     # Dict comparison
@@ -68,40 +71,48 @@ def compare_structures(
             new_path = f"{path}.{key}" if path else key
 
             if key not in expected:
-                diffs.append(DiffResult(
-                    match=False,
-                    path=new_path,
-                    expected=None,
-                    actual=actual[key],
-                    message="Unexpected key in actual",
-                ))
+                diffs.append(
+                    DiffResult(
+                        match=False,
+                        path=new_path,
+                        expected=None,
+                        actual=actual[key],
+                        message="Unexpected key in actual",
+                    )
+                )
             elif key not in actual:
-                diffs.append(DiffResult(
-                    match=False,
-                    path=new_path,
-                    expected=expected[key],
-                    actual=None,
-                    message="Missing key in actual",
-                ))
+                diffs.append(
+                    DiffResult(
+                        match=False,
+                        path=new_path,
+                        expected=expected[key],
+                        actual=None,
+                        message="Missing key in actual",
+                    )
+                )
             else:
-                diffs.extend(compare_structures(
-                    expected[key],
-                    actual[key],
-                    new_path,
-                    ignore_keys,
-                ))
+                diffs.extend(
+                    compare_structures(
+                        expected[key],
+                        actual[key],
+                        new_path,
+                        ignore_keys,
+                    )
+                )
         return diffs
 
     # List comparison
     if isinstance(expected, list):
         if len(expected) != len(actual):
-            diffs.append(DiffResult(
-                match=False,
-                path=path,
-                expected=len(expected),
-                actual=len(actual),
-                message="List length mismatch",
-            ))
+            diffs.append(
+                DiffResult(
+                    match=False,
+                    path=path,
+                    expected=len(expected),
+                    actual=len(actual),
+                    message="List length mismatch",
+                )
+            )
             # Still compare common elements
             min_len = min(len(expected), len(actual))
         else:
@@ -109,23 +120,27 @@ def compare_structures(
 
         for i in range(min_len):
             new_path = f"{path}[{i}]"
-            diffs.extend(compare_structures(
-                expected[i],
-                actual[i],
-                new_path,
-                ignore_keys,
-            ))
+            diffs.extend(
+                compare_structures(
+                    expected[i],
+                    actual[i],
+                    new_path,
+                    ignore_keys,
+                )
+            )
         return diffs
 
     # Value comparison
     if expected != actual:
-        diffs.append(DiffResult(
-            match=False,
-            path=path,
-            expected=expected,
-            actual=actual,
-            message="Value mismatch",
-        ))
+        diffs.append(
+            DiffResult(
+                match=False,
+                path=path,
+                expected=expected,
+                actual=actual,
+                message="Value mismatch",
+            )
+        )
 
     return diffs
 
@@ -148,7 +163,7 @@ def format_diff_report(diffs: list[DiffResult], max_diffs: int = 10) -> str:
     lines.append("-" * 60)
 
     for i, diff in enumerate(diffs[:max_diffs]):
-        lines.append(f"\n{i+1}. {diff}")
+        lines.append(f"\n{i + 1}. {diff}")
 
     if len(diffs) > max_diffs:
         lines.append(f"\n... and {len(diffs) - max_diffs} more differences")

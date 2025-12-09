@@ -23,6 +23,7 @@ from src.app.routes import chat, generate, jobs, templates
 # Configuration
 # =============================================================================
 
+
 def load_config(config_path: Path | None = None) -> dict:
     """설정 파일 로드."""
     if config_path is None:
@@ -40,6 +41,7 @@ def load_config(config_path: Path | None = None) -> dict:
 # =============================================================================
 # Lifespan
 # =============================================================================
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -79,7 +81,9 @@ if static_dir.exists():
 
 # Jinja2 templates
 templates_dir = Path(__file__).parent / "templates"
-jinja_templates = Jinja2Templates(directory=templates_dir) if templates_dir.exists() else None
+jinja_templates = (
+    Jinja2Templates(directory=templates_dir) if templates_dir.exists() else None
+)
 
 
 # =============================================================================
@@ -94,7 +98,9 @@ app.include_router(jobs.router, prefix="/jobs", tags=["Jobs"])
 
 # API 라우트
 app.include_router(chat.api_router, prefix="/api/chat", tags=["Chat API"])
-app.include_router(templates.api_router, prefix="/api/templates", tags=["Templates API"])
+app.include_router(
+    templates.api_router, prefix="/api/templates", tags=["Templates API"]
+)
 app.include_router(generate.api_router, prefix="/api/generate", tags=["Generate API"])
 app.include_router(jobs.api_router, prefix="/api/jobs", tags=["Jobs API"])
 
@@ -102,6 +108,7 @@ app.include_router(jobs.api_router, prefix="/api/jobs", tags=["Jobs API"])
 # =============================================================================
 # Root Endpoints
 # =============================================================================
+
 
 @app.get("/")
 async def root() -> dict[str, Any]:
@@ -113,7 +120,7 @@ async def root() -> dict[str, Any]:
             "chat": "/chat",
             "templates": "/templates",
             "jobs": "/jobs",
-        }
+        },
     }
 
 

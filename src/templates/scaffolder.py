@@ -20,26 +20,30 @@ import yaml
 # Types
 # =============================================================================
 
+
 class ScaffoldLevel(str, Enum):
     """스캐폴딩 레벨."""
-    AUTO = "auto"          # Level 1: placeholder 있음
+
+    AUTO = "auto"  # Level 1: placeholder 있음
     SEMI_AUTO = "semi-auto"  # Level 2: LLM 감지 + 검수
-    MANUAL = "manual"      # 수동 편집
+    MANUAL = "manual"  # 수동 편집
 
 
 @dataclass
 class DetectedField:
     """감지된 필드."""
-    field_name: str        # definition.yaml 키 (wo_no, line 등)
-    label_text: str        # 원본에서 발견된 라벨 ("작업지시:", "W/O No." 등)
-    original_value: str    # 원본에서 발견된 값 ("WO-001" 등)
-    confidence: float      # 감지 신뢰도 (0.0 ~ 1.0)
+
+    field_name: str  # definition.yaml 키 (wo_no, line 등)
+    label_text: str  # 원본에서 발견된 라벨 ("작업지시:", "W/O No." 등)
+    original_value: str  # 원본에서 발견된 값 ("WO-001" 등)
+    confidence: float  # 감지 신뢰도 (0.0 ~ 1.0)
     position: str | None = None  # 위치 정보 (셀 주소, 문단 번호 등)
 
 
 @dataclass
 class ScaffoldResult:
     """스캐폴딩 결과."""
+
     level: ScaffoldLevel
     detected_fields: list[DetectedField] = field(default_factory=list)
     detected_measurements: bool = False
@@ -70,6 +74,7 @@ class ScaffoldResult:
 # =============================================================================
 # LLM Provider Protocol (for dependency injection)
 # =============================================================================
+
 
 class LLMExtractor(Protocol):
     """LLM 기반 필드 추출 인터페이스."""
@@ -175,12 +180,14 @@ def detect_labels_rule_based(
             if not value or PLACEHOLDER_PATTERN.match(value):
                 continue
 
-            results.append(DetectedField(
-                field_name=field_name,
-                label_text=label_text,
-                original_value=value,
-                confidence=0.7,  # 규칙 기반은 중간 신뢰도
-            ))
+            results.append(
+                DetectedField(
+                    field_name=field_name,
+                    label_text=label_text,
+                    original_value=value,
+                    confidence=0.7,  # 규칙 기반은 중간 신뢰도
+                )
+            )
 
     return results
 
@@ -188,6 +195,7 @@ def detect_labels_rule_based(
 # =============================================================================
 # Template Scaffolder
 # =============================================================================
+
 
 class TemplateScaffolder:
     """
@@ -254,9 +262,7 @@ class TemplateScaffolder:
 
         warnings = []
         if unknown:
-            warnings.append(
-                f"Unknown placeholders (not in definition.yaml): {unknown}"
-            )
+            warnings.append(f"Unknown placeholders (not in definition.yaml): {unknown}")
 
         # manifest 생성
         manifest = self._build_manifest_from_placeholders(matched)
@@ -294,7 +300,8 @@ class TemplateScaffolder:
         # 필수 필드 누락 체크
         detected_names = {f.field_name for f in detected}
         required_fields = [
-            name for name, config in self.definition.get("fields", {}).items()
+            name
+            for name, config in self.definition.get("fields", {}).items()
             if config.get("importance") == "critical"
         ]
         missing = set(required_fields) - detected_names
@@ -303,7 +310,9 @@ class TemplateScaffolder:
 
         # 측정 테이블 감지 (간단한 휴리스틱)
         measurement_keywords = ["SPEC", "MEASURED", "측정", "규격"]
-        has_measurements = any(kw.lower() in text.lower() for kw in measurement_keywords)
+        has_measurements = any(
+            kw.lower() in text.lower() for kw in measurement_keywords
+        )
 
         # manifest 생성
         manifest = self._build_manifest_from_detected(detected)
@@ -401,10 +410,7 @@ class TemplateScaffolder:
         placeholders = [f.field_name for f in detected]
 
         # 라벨 매핑 (반자동 생성 시 유용)
-        label_mappings = {
-            f.label_text: f.field_name
-            for f in detected
-        }
+        label_mappings = {f.label_text: f.field_name for f in detected}
 
         return {
             "docx_placeholders": placeholders,
@@ -430,6 +436,7 @@ class TemplateScaffolder:
 # =============================================================================
 # Convenience Functions
 # =============================================================================
+
 
 def analyze_example_document(
     text: str,

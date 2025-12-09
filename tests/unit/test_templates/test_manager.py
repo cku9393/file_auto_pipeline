@@ -25,6 +25,7 @@ from src.templates.manager import (
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def templates_root(tmp_path: Path) -> Path:
     """테스트용 templates/ 루트."""
@@ -57,6 +58,7 @@ def sample_template(manager: TemplateManager) -> str:
 # =============================================================================
 # validate_template_id 테스트
 # =============================================================================
+
 
 class TestValidateTemplateId:
     """template_id 유효성 검증 테스트."""
@@ -101,16 +103,16 @@ class TestValidateTemplateId:
     def test_forbidden_characters(self):
         """금지 문자 → 에러."""
         forbidden_ids = [
-            "customer/a",     # /
-            "customer\\a",    # \
-            "customer:a",     # :
-            "customer*a",     # *
-            "customer?a",     # ?
-            'customer"a',     # "
-            "customer<a",     # <
-            "customer>a",     # >
-            "customer|a",     # |
-            "customer a",     # 공백
+            "customer/a",  # /
+            "customer\\a",  # \
+            "customer:a",  # :
+            "customer*a",  # *
+            "customer?a",  # ?
+            'customer"a',  # "
+            "customer<a",  # <
+            "customer>a",  # >
+            "customer|a",  # |
+            "customer a",  # 공백
         ]
 
         for tid in forbidden_ids:
@@ -152,6 +154,7 @@ class TestValidateTemplateId:
 # =============================================================================
 # TemplateManager.create 테스트
 # =============================================================================
+
 
 class TestTemplateManagerCreate:
     """TemplateManager.create 테스트."""
@@ -250,6 +253,7 @@ class TestTemplateManagerCreate:
 # TemplateManager.save_source 테스트 (source/ 불변 가드)
 # =============================================================================
 
+
 class TestTemplateManagerSaveSource:
     """
     save_source 테스트.
@@ -341,6 +345,7 @@ class TestTemplateManagerSaveSource:
 # TemplateManager.save_compiled 테스트
 # =============================================================================
 
+
 class TestTemplateManagerSaveCompiled:
     """save_compiled 테스트 (compiled/는 덮어쓰기 허용)."""
 
@@ -376,6 +381,7 @@ class TestTemplateManagerSaveCompiled:
 # TemplateManager.update_status 테스트
 # =============================================================================
 
+
 class TestTemplateManagerUpdateStatus:
     """update_status 테스트."""
 
@@ -410,6 +416,7 @@ class TestTemplateManagerUpdateStatus:
 # =============================================================================
 # TemplateManager.list_templates 테스트
 # =============================================================================
+
 
 class TestTemplateManagerListTemplates:
     """list_templates 테스트."""
@@ -450,6 +457,7 @@ class TestTemplateManagerListTemplates:
 # =============================================================================
 # TemplateManager.delete 테스트
 # =============================================================================
+
 
 class TestTemplateManagerDelete:
     """delete 테스트."""
@@ -506,6 +514,7 @@ class TestTemplateManagerDelete:
 # =============================================================================
 # TemplateMeta 테스트
 # =============================================================================
+
 
 class TestTemplateMeta:
     """TemplateMeta 데이터클래스 테스트."""

@@ -23,6 +23,7 @@ from src.app.providers.base import (
 # OCRResult 테스트
 # =============================================================================
 
+
 class TestOCRResult:
     """OCRResult 데이터클래스 테스트."""
 
@@ -98,9 +99,15 @@ class TestOCRResult:
         d = result.to_dict()
 
         expected_keys = {
-            "success", "text", "confidence",
-            "model_requested", "model_used", "fallback_triggered",
-            "processed_at", "error_message", "error_code",
+            "success",
+            "text",
+            "confidence",
+            "model_requested",
+            "model_used",
+            "fallback_triggered",
+            "processed_at",
+            "error_message",
+            "error_code",
         }
         assert set(d.keys()) == expected_keys
 
@@ -108,6 +115,7 @@ class TestOCRResult:
 # =============================================================================
 # ExtractionResult 테스트
 # =============================================================================
+
 
 class TestExtractionResult:
     """ExtractionResult 데이터클래스 테스트."""
@@ -139,7 +147,12 @@ class TestExtractionResult:
         result = ExtractionResult(
             success=True,
             measurements=[
-                {"item": "길이", "spec": "10±0.1", "measured": "10.05", "result": "PASS"},
+                {
+                    "item": "길이",
+                    "spec": "10±0.1",
+                    "measured": "10.05",
+                    "result": "PASS",
+                },
                 {"item": "폭", "spec": "5±0.1", "measured": "5.02", "result": "PASS"},
             ],
         )
@@ -224,8 +237,12 @@ class TestExtractionResult:
         # ExtractionResult.to_dict()는 None 값을 제거함 (용량 절약)
         # 기본값이 있는 필드만 포함
         expected_keys = {
-            "success", "fields", "measurements", "missing_fields",
-            "warnings", "llm_raw_truncated",  # 기본값 False
+            "success",
+            "fields",
+            "measurements",
+            "missing_fields",
+            "warnings",
+            "llm_raw_truncated",  # 기본값 False
         }
         assert set(d.keys()) == expected_keys
 
@@ -233,6 +250,7 @@ class TestExtractionResult:
 # =============================================================================
 # Provider Error 테스트
 # =============================================================================
+
 
 class TestProviderErrors:
     """Provider 에러 클래스 테스트."""
@@ -275,6 +293,7 @@ class TestProviderErrors:
 # =============================================================================
 # Abstract Provider 테스트
 # =============================================================================
+
 
 class TestAbstractProviders:
     """Abstract Provider 인터페이스 테스트."""
