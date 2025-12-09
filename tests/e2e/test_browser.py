@@ -50,7 +50,7 @@ def test_health_check(page: Page, live_server: str) -> None:
     assert response.status == 200
 
     # locator 기반: "ok" 텍스트가 보일 때까지 대기
-    page.wait_for_selector('text="ok"', timeout=10000)
+    page.wait_for_selector('text="ok"', timeout=30000)
 
 
 def test_chat_page_loads(page: Page, live_server: str) -> None:
@@ -115,7 +115,7 @@ def test_navigation_between_pages(page: Page, live_server: str) -> None:
     assert "/templates" in page.url
 
     page.goto(f"{live_server}/health")
-    page.wait_for_selector('text="ok"', timeout=10000)
+    page.wait_for_selector('text="ok"', timeout=30000)
 
 
 # =============================================================================

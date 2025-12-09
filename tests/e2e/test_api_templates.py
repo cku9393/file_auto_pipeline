@@ -12,6 +12,7 @@ test_api_templates.py - Templates API E2E 테스트
 """
 
 import io
+import uuid
 
 import pytest
 from fastapi.testclient import TestClient
@@ -137,10 +138,11 @@ class TestCreateTemplate:
 
     def test_create_template_success(self, client):
         """POST /api/templates → 템플릿 생성."""
+        unique_id = f"test_template_{uuid.uuid4().hex[:8]}"
         response = client.post(
             "/api/templates",
             data={
-                "template_id": "test_template",
+                "template_id": unique_id,
                 "display_name": "테스트 템플릿",
                 "doc_type": "inspection",
             },
@@ -150,15 +152,16 @@ class TestCreateTemplate:
         data = response.json()
 
         assert data["success"] is True
-        assert data["template_id"] == "test_template"
+        assert data["template_id"] == unique_id
         assert "message" in data
 
     def test_create_template_with_docx(self, client, sample_docx):
         """DOCX 파일과 함께 생성."""
+        unique_id = f"with_docx_{uuid.uuid4().hex[:8]}"
         response = client.post(
             "/api/templates",
             data={
-                "template_id": "with_docx",
+                "template_id": unique_id,
                 "display_name": "DOCX 템플릿",
                 "doc_type": "inspection",
             },
@@ -177,10 +180,11 @@ class TestCreateTemplate:
 
     def test_create_template_with_xlsx(self, client, sample_xlsx):
         """XLSX 파일과 함께 생성."""
+        unique_id = f"with_xlsx_{uuid.uuid4().hex[:8]}"
         response = client.post(
             "/api/templates",
             data={
-                "template_id": "with_xlsx",
+                "template_id": unique_id,
                 "display_name": "XLSX 템플릿",
                 "doc_type": "inspection",
             },
@@ -199,10 +203,11 @@ class TestCreateTemplate:
 
     def test_create_template_with_both_files(self, client, sample_docx, sample_xlsx):
         """DOCX, XLSX 모두 업로드."""
+        unique_id = f"with_both_{uuid.uuid4().hex[:8]}"
         response = client.post(
             "/api/templates",
             data={
-                "template_id": "with_both",
+                "template_id": unique_id,
                 "display_name": "DOCX+XLSX 템플릿",
                 "doc_type": "inspection",
             },
@@ -226,10 +231,11 @@ class TestCreateTemplate:
 
     def test_create_template_returns_requires_review(self, client):
         """리뷰 필요 플래그 반환."""
+        unique_id = f"needs_review_{uuid.uuid4().hex[:8]}"
         response = client.post(
             "/api/templates",
             data={
-                "template_id": "needs_review",
+                "template_id": unique_id,
                 "display_name": "리뷰 필요",
                 "doc_type": "inspection",
             },
@@ -396,10 +402,11 @@ class TestTemplateIdValidation:
 
     def test_template_id_with_valid_chars(self, client):
         """유효한 템플릿 ID (소문자, 숫자, 밑줄)."""
+        unique_id = f"valid_template_{uuid.uuid4().hex[:8]}"
         response = client.post(
             "/api/templates",
             data={
-                "template_id": "valid_template_123",
+                "template_id": unique_id,
                 "display_name": "유효한 ID",
                 "doc_type": "inspection",
             },
@@ -432,10 +439,11 @@ class TestDocTypes:
 
     def test_create_inspection_template(self, client):
         """검사성적서 타입."""
+        unique_id = f"inspection_{uuid.uuid4().hex[:8]}"
         response = client.post(
             "/api/templates",
             data={
-                "template_id": "inspection_test",
+                "template_id": unique_id,
                 "display_name": "검사성적서",
                 "doc_type": "inspection",
             },
@@ -445,10 +453,11 @@ class TestDocTypes:
 
     def test_create_report_template(self, client):
         """보고서 타입."""
+        unique_id = f"report_{uuid.uuid4().hex[:8]}"
         response = client.post(
             "/api/templates",
             data={
-                "template_id": "report_test",
+                "template_id": unique_id,
                 "display_name": "보고서",
                 "doc_type": "report",
             },
@@ -458,10 +467,11 @@ class TestDocTypes:
 
     def test_create_other_template(self, client):
         """기타 타입."""
+        unique_id = f"other_{uuid.uuid4().hex[:8]}"
         response = client.post(
             "/api/templates",
             data={
-                "template_id": "other_test",
+                "template_id": unique_id,
                 "display_name": "기타",
                 "doc_type": "other",
             },
