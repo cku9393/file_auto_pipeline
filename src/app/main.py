@@ -13,6 +13,7 @@ from typing import Any
 
 import yaml
 from fastapi import FastAPI
+from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -124,7 +125,7 @@ async def root() -> dict[str, Any]:
     }
 
 
-@app.get("/health")
+@app.get("/health", response_class=PlainTextResponse)
 async def health() -> str:
     """헬스 체크."""
     return "ok"

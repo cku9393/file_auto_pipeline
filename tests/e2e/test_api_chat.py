@@ -39,7 +39,7 @@ class TestHealthCheck:
         response = client.get("/health")
 
         assert response.status_code == 200
-        assert response.text == '"ok"'  # FastAPI returns JSON-encoded string
+        assert response.text == "ok"  # PlainTextResponse returns plain text
 
 
 # =============================================================================
