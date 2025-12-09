@@ -215,7 +215,7 @@ async def create_template(
             "requires_review": True,
         }
     except TemplateError as e:
-        raise HTTPException(status_code=400, detail={"code": e.code, "message": e.message})
+        raise HTTPException(status_code=400, detail={"code": e.code, "message": e.message}) from e
 
 
 @api_router.get("/{template_id}")
@@ -228,7 +228,7 @@ async def get_template(
         meta = template_manager.get_meta(template_id)
         return meta.to_dict()
     except TemplateError as e:
-        raise HTTPException(status_code=404, detail={"code": e.code, "message": e.message})
+        raise HTTPException(status_code=404, detail={"code": e.code, "message": e.message}) from e
 
 
 @api_router.patch("/{template_id}")
@@ -245,7 +245,7 @@ async def update_template_status(
         raise HTTPException(
             status_code=400,
             detail={"code": "INVALID_STATUS", "message": f"Invalid status: {status}"}
-        )
+        ) from None
 
     try:
         meta = template_manager.update_status(template_id, new_status, reviewed_by)
@@ -256,7 +256,7 @@ async def update_template_status(
             "updated_at": meta.updated_at,
         }
     except TemplateError as e:
-        raise HTTPException(status_code=404, detail={"code": e.code, "message": e.message})
+        raise HTTPException(status_code=404, detail={"code": e.code, "message": e.message}) from e
 
 
 @api_router.delete("/{template_id}")
@@ -275,4 +275,4 @@ async def delete_template(
         }
     except TemplateError as e:
         status_code = 404 if e.code == "TEMPLATE_NOT_FOUND" else 400
-        raise HTTPException(status_code=status_code, detail={"code": e.code, "message": e.message})
+        raise HTTPException(status_code=status_code, detail={"code": e.code, "message": e.message}) from e

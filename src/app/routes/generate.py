@@ -169,7 +169,7 @@ async def generate_document(
             raise HTTPException(
                 status_code=400,
                 detail="photo_overrides must be valid JSON",
-            )
+            ) from None
 
     # === 1. RunLog 생성 (시작 시점) ===
     run_log = create_run_log(job_id)
@@ -430,10 +430,10 @@ async def generate_document(
             raise HTTPException(
                 status_code=409,
                 detail="동시 접근 충돌: 다른 generate 작업이 진행 중입니다. 잠시 후 다시 시도하세요.",
-            )
+            ) from e
         error_code = e.code
         error_context = e.context
-        raise HTTPException(status_code=409, detail=str(e))
+        raise HTTPException(status_code=409, detail=str(e)) from e
 
     except HTTPException:
         # HTTPException은 그대로 전파 (이미 error_code/context 설정됨)
@@ -447,7 +447,7 @@ async def generate_document(
         raise HTTPException(
             status_code=500,
             detail=f"문서 생성 중 오류 발생: {e}",
-        )
+        ) from e
 
     finally:
         # === 10. RunLog 항상 저장 (성공/실패/예외 모두) ===

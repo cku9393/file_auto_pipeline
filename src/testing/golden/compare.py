@@ -45,7 +45,7 @@ def compare_structures(
     diffs: list[DiffResult] = []
 
     # Type mismatch
-    if type(expected) != type(actual):
+    if type(expected) is not type(actual):
         # Allow None vs missing
         if expected is None and actual is None:
             return []

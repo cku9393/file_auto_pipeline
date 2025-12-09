@@ -151,7 +151,7 @@ class TestDocxRendererRender:
         renderer = DocxRenderer(simple_docx_template)
         output_path = tmp_path / "nested" / "dir" / "output.docx"
 
-        result = renderer.render(sample_render_data, output_path)
+        renderer.render(sample_render_data, output_path)
 
         assert output_path.exists()
         assert output_path.parent.exists()

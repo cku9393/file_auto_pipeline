@@ -158,7 +158,7 @@ class TestPhotoReplacesExistingDerived:
         assert trash_dir.exists()
 
         # archive된 로그 확인
-        archived_logs = [l for l in result.processing_logs if l.archived_path]
+        archived_logs = [log for log in result.processing_logs if log.archived_path]
         assert len(archived_logs) >= 1
         assert archived_logs[0].slot_id == "overview"
 
@@ -170,7 +170,7 @@ class TestPhotoReplacesExistingDerived:
         service.save_upload("01_overview.jpg", b"new photo")
         service.save_upload("02_label_serial.jpg", b"label")
 
-        result = service.validate_and_process()
+        service.validate_and_process()
 
         # derived에 새 파일 존재
         derived = job_dir / "photos" / "derived" / "overview.jpg"
@@ -206,7 +206,7 @@ class TestMissingRequiredPhotoRejects:
 
         result = service.validate_and_process()
 
-        missing_logs = [l for l in result.processing_logs if l.action == "missing"]
+        missing_logs = [log for log in result.processing_logs if log.action == "missing"]
         assert len(missing_logs) >= 2  # overview, label_serial
 
 
@@ -251,7 +251,7 @@ class TestMissingPhotoWithValidOverride:
             }
         )
 
-        override_logs = [l for l in result.processing_logs if l.action == "override"]
+        override_logs = [log for log in result.processing_logs if log.action == "override"]
         assert len(override_logs) == 1
         assert override_logs[0].slot_id == "measurement_setup"
         assert override_logs[0].override_reason is not None
@@ -288,7 +288,7 @@ class TestDuplicatePhotosSelectsByPreferOrder:
         service.save_upload("01_overview.png", b"png version")
         service.save_upload("02_label_serial.jpg", b"label")
 
-        result = service.validate_and_process()
+        service.validate_and_process()
 
         # jpg가 선택되어야 함
         derived = job_dir / "photos" / "derived" / "overview.jpg"
@@ -342,7 +342,7 @@ class TestRunLogIncludesPhotoProcessing:
 
         result = service.validate_and_process()
 
-        mapped_logs = [l for l in result.processing_logs if l.action == "mapped"]
+        mapped_logs = [log for log in result.processing_logs if log.action == "mapped"]
         assert len(mapped_logs) >= 2
 
         for log in mapped_logs:

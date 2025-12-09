@@ -246,7 +246,7 @@ class TemplateManager:
                 f"Failed to acquire lock for template '{template_id}'",
                 template_id=template_id,
                 timeout=self.LOCK_TIMEOUT,
-            )
+            ) from None
         finally:
             lock.release()
 

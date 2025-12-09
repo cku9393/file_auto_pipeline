@@ -214,7 +214,7 @@ class TestCompressMode:
         """압축 파일이 유효한 tar.gz임."""
         old_date = datetime.now() - timedelta(days=35)
         old_name = old_date.strftime("%Y%m%d_%H%M%S_RUN-OLD")
-        old_folder = create_archive_folder(trash_dir, old_name, size_kb=10)
+        create_archive_folder(trash_dir, old_name, size_kb=10)
 
         config = TrashRetentionConfig(
             retention_days=30,

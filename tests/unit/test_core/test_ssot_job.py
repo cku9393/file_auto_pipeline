@@ -116,7 +116,6 @@ class TestJobLock:
 
         # 둘 중 하나는 성공, 하나는 timeout
         success_count = sum(1 for r in results if "success" in r)
-        timeout_count = sum(1 for r in results if "timeout" in r)
 
         assert success_count >= 1  # 최소 1개 성공
         # Note: 타이밍에 따라 둘 다 성공할 수 있음 (순차적 획득)
@@ -272,7 +271,9 @@ class TestEnsureJobJson:
         job_dir.mkdir()
 
         packet = {"wo_no": "WO-001", "line": "L1"}
-        generate_id = lambda p: f"JOB-{p['wo_no']}-{p['line']}"
+
+        def generate_id(p):
+            return f"JOB-{p['wo_no']}-{p['line']}"
 
         job_id = ensure_job_json(job_dir, packet, test_config, generate_id)
 
@@ -303,7 +304,9 @@ class TestEnsureJobJson:
         (job_dir / "job.json").write_text(json.dumps(existing_data))
 
         packet = {"wo_no": "WO-001", "line": "L1"}
-        generate_id = lambda p: "NEW-JOB-ID"  # 호출되지 않아야 함
+
+        def generate_id(p):  # noqa: ARG001
+            return "NEW-JOB-ID"  # 호출되지 않아야 함
 
         job_id = ensure_job_json(job_dir, packet, test_config, generate_id)
 
@@ -352,7 +355,7 @@ class TestJobLockReleaseFailure:
             raise OSError("Permission denied")
 
         # job_lock 진입 후 rmdir만 mock
-        with job_lock(job_dir, test_config) as lock_dir:
+        with job_lock(job_dir, test_config):
             # 컨텍스트 내에서 rmdir을 실패하도록 교체
             ssot_job.os.rmdir = failing_rmdir
 

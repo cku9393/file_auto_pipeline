@@ -104,9 +104,9 @@ async def retry_with_fallback(
     try:
         return await retry_with_exponential_backoff(
             primary_func,
+            *args,
             max_retries=max_retries,
             exceptions=exceptions,
-            *args,
             **kwargs,
         )
     except exceptions as primary_error:

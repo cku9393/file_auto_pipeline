@@ -277,7 +277,7 @@ async def download_file(
         resolved = file_path.resolve(strict=True)
         resolved.relative_to(job_dir.resolve())
     except (ValueError, OSError):
-        raise HTTPException(status_code=400, detail={"code": "INVALID_PATH", "message": "Invalid file path"})
+        raise HTTPException(status_code=400, detail={"code": "INVALID_PATH", "message": "Invalid file path"}) from None
 
     # symlink 자체를 명시적으로 차단
     if file_path.is_symlink():

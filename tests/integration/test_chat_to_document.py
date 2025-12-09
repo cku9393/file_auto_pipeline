@@ -254,7 +254,7 @@ class TestExtractionIntegration:
         # 불완전한 입력 (정규식으로 모든 필드 추출 불가)
         user_input = "작업번호 WO-001입니다"
 
-        result = await service.extract(user_input)
+        await service.extract(user_input)
 
         # LLM 호출됨
         mock_llm_provider.extract_fields.assert_called_once()
@@ -354,7 +354,7 @@ class TestChatToDocumentFlow:
         assert validation_result.valid is True
 
         # 4. SSOT: Job 생성
-        job_id = generate_job_id(final_fields)
+        generate_job_id(final_fields)
         config = {"lock": {"timeout": 5}}
         ensure_job_json(job_dir, final_fields, config, generate_job_id)
 

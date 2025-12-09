@@ -357,7 +357,7 @@ class TestExtract:
         """필수 필드 누락 시 LLM 호출."""
         user_input = "작업번호: WO-001"  # line, part_no, lot, result 누락
 
-        result = await extraction_service.extract(user_input)
+        await extraction_service.extract(user_input)
 
         # LLM 호출됨
         extraction_service.provider.extract_fields.assert_called_once()
