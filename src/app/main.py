@@ -125,9 +125,9 @@ async def root() -> dict[str, Any]:
 
 
 @app.get("/health")
-async def health() -> dict[str, str]:
+async def health() -> str:
     """헬스 체크."""
-    return {"status": "ok"}
+    return "ok"
 
 
 # =============================================================================
