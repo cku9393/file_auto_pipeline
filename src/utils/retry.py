@@ -79,8 +79,8 @@ async def retry_with_fallback(
     fallback_func: Callable[..., Awaitable[T]] | None = None,
     max_retries: int = 2,
     exceptions: tuple[type[Exception], ...] = (Exception,),
-    *args: Any,
-    **kwargs: Any,
+    func_args: tuple[Any, ...] | None = None,
+    func_kwargs: dict[str, Any] | None = None,
 ) -> T:
     """
     재시도 후 fallback 함수 실행.
@@ -90,8 +90,8 @@ async def retry_with_fallback(
         fallback_func: fallback 함수 (None이면 재시도만 수행)
         max_retries: primary_func 최대 재시도 횟수
         exceptions: 재시도할 예외 타입들
-        *args: 함수에 전달할 위치 인자
-        **kwargs: 함수에 전달할 키워드 인자
+        func_args: 함수에 전달할 위치 인자
+        func_kwargs: 함수에 전달할 키워드 인자
 
     Returns:
         primary_func 또는 fallback_func의 반환값
@@ -99,12 +99,19 @@ async def retry_with_fallback(
     Raises:
         primary_func와 fallback_func 모두 실패 시 마지막 예외
     """
+    args = func_args or ()
+    kwargs = func_kwargs or {}
+
+    # Call with all positional args first, then the keyword-only arguments
     try:
         return await retry_with_exponential_backoff(
             primary_func,
+            max_retries,  # Pass as positional
+            1.0,  # initial_delay (use default)
+            60.0,  # max_delay (use default)
+            2.0,  # exponential_base (use default)
+            exceptions,  # Pass as positional
             *args,
-            max_retries=max_retries,
-            exceptions=exceptions,
             **kwargs,
         )
     except exceptions as primary_error:

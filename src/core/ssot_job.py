@@ -78,7 +78,9 @@ def _read_lock_meta(lock_dir: Path) -> dict | None:
     """
     meta_path = lock_dir / LOCK_META_FILENAME
     try:
-        return json.loads(meta_path.read_text(encoding="utf-8"))
+        content = meta_path.read_text(encoding="utf-8")
+        result: dict[str, Any] = json.loads(content)
+        return result
     except (OSError, json.JSONDecodeError):
         return None
 

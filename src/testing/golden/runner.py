@@ -221,8 +221,8 @@ class GoldenRunner:
         xlsx_result: dict[str, Any] = {}
         if xlsx_template.exists() and manifest_path.exists():
             manifest = load_manifest(manifest_path)
-            renderer = ExcelRenderer(xlsx_template, manifest)
-            renderer.render(data=data, output_path=xlsx_output)
+            xlsx_renderer = ExcelRenderer(xlsx_template, manifest)
+            xlsx_renderer.render(data=data, output_path=xlsx_output)
 
             # Extract content
             xlsx_result = self.xlsx_extractor.extract_to_dict(xlsx_output)

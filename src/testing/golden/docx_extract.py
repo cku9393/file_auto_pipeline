@@ -100,7 +100,7 @@ class DocxExtractor:
         Returns:
             DocxContent with extracted elements
         """
-        doc = Document(docx_path)
+        doc = Document(str(docx_path))
         content = DocxContent()
 
         # Extract paragraphs
@@ -117,7 +117,7 @@ class DocxExtractor:
 
         return content
 
-    def _extract_paragraphs(self, doc: Document) -> list[str]:
+    def _extract_paragraphs(self, doc: Any) -> list[str]:
         """Extract body paragraph texts."""
         paragraphs = []
 
@@ -130,7 +130,7 @@ class DocxExtractor:
 
         return paragraphs
 
-    def _extract_tables(self, doc: Document) -> list[list[list[str]]]:
+    def _extract_tables(self, doc: Any) -> list[list[list[str]]]:
         """
         Extract table contents.
 
@@ -156,7 +156,7 @@ class DocxExtractor:
 
     def _extract_images(
         self,
-        doc: Document,
+        doc: Any,
         docx_path: Path,
     ) -> list[dict[str, Any]]:
         """
@@ -168,7 +168,7 @@ class DocxExtractor:
         - Media file count (how many files in word/media/)
         - Per-image details (filename, size, inferred slot)
         """
-        images = []
+        images: list[dict[str, Any]] = []
         relationship_count = 0
         media_file_count = 0
 
@@ -296,7 +296,7 @@ class DocxExtractor:
 
         return None
 
-    def _extract_metadata(self, doc: Document) -> dict[str, Any]:
+    def _extract_metadata(self, doc: Any) -> dict[str, Any]:
         """Extract document metadata (normalized)."""
         metadata: dict[str, Any] = {}
 

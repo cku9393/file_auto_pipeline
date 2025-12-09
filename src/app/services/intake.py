@@ -17,11 +17,9 @@ from typing import Any
 from src.core.ssot_job import atomic_write_json
 from src.domain.errors import ErrorCodes, PolicyRejectError
 from src.domain.schemas import (
-    ExtractionResult,
     IntakeAttachment,
     IntakeMessage,
     IntakeSession,
-    OCRResult,
     PhotoMapping,
     UserCorrection,
 )
@@ -146,7 +144,7 @@ class IntakeService:
     def add_ocr_result(
         self,
         filename: str,
-        result: "OCRResult",
+        result: Any,
     ) -> None:
         """
         OCR 결과 추가 (append-only).
@@ -172,7 +170,7 @@ class IntakeService:
 
     def add_extraction_result(
         self,
-        result: "ExtractionResult",
+        result: Any,
     ) -> None:
         """
         LLM 추출 결과 추가 (append-only).

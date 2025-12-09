@@ -225,7 +225,7 @@ class XlsxExtractor:
             "headers": {"item": "항목", "spec": "규격", "measured": "측정값", ...}
         }
         """
-        measurements = []
+        measurements: list[dict[str, Any]] = []
 
         sheet_name = self.measurement_config.get("sheet", "Sheet1")
 
@@ -294,7 +294,7 @@ class XlsxExtractor:
             }
         }
         """
-        measurements = []
+        measurements: list[dict[str, Any]] = []
         header_row = self.measurement_config.get("header_row", 1)
         headers_map = self.measurement_config.get("headers", {})
 

@@ -28,7 +28,8 @@ api_router = APIRouter()  # API endpoints
 
 def get_jobs_root(request: Request) -> Path:
     """Request에서 jobs_root 경로 가져오기."""
-    return request.app.state.jobs_root
+    jobs_root: Path = request.app.state.jobs_root
+    return jobs_root
 
 
 # =============================================================================
@@ -238,20 +239,21 @@ async def get_job(
 
     if deliverables:
         html += "<ul class='file-list'>"
-        for f in deliverables:
-            size_kb = f["size"] / 1024
+        for item in deliverables:
+            size_kb = item["size"] / 1024
             icon = (
                 "📄"
-                if f["name"].endswith(".docx")
+                if item["name"].endswith(".docx")
                 else "📊"
-                if f["name"].endswith(".xlsx")
+                if item["name"].endswith(".xlsx")
                 else "📁"
             )
+            filename = item["name"]
             html += f"""
             <li>
-                {icon} <span class="filename">{f["name"]}</span>
+                {icon} <span class="filename">{filename}</span>
                 <span class="size">{size_kb:.1f} KB</span>
-                <a href="/api/jobs/{job_id}/download/{f["name"]}" class="button small">다운로드</a>
+                <a href="/api/jobs/{job_id}/download/{filename}" class="button small">다운로드</a>
             </li>
             """
         html += "</ul>"
