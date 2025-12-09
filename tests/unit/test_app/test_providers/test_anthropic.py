@@ -18,7 +18,6 @@ import pytest
 from src.app.providers.anthropic import ClaudeProvider
 from src.app.providers.base import ExtractionError
 
-
 # =============================================================================
 # Mock Factories
 # =============================================================================

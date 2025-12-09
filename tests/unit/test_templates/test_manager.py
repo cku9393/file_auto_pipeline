@@ -8,13 +8,10 @@ ADR-0002 검증:
 - 상태: draft → ready → archived
 """
 
-import json
-import os
 import stat
 from pathlib import Path
 
 import pytest
-import yaml
 
 from src.templates.manager import (
     TemplateError,
@@ -22,11 +19,7 @@ from src.templates.manager import (
     TemplateMeta,
     TemplateStatus,
     validate_template_id,
-    get_template_path,
-    TEMPLATE_ID_PATTERN,
-    TEMPLATE_ID_MAX_LENGTH,
 )
-
 
 # =============================================================================
 # Fixtures

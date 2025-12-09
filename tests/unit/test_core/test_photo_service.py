@@ -11,13 +11,11 @@ DoD:
 """
 
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
-from src.core.photos import PhotoService, PhotoValidationResult
-from src.domain.errors import PolicyRejectError
-from src.domain.schemas import PhotoProcessingLog, PhotoSlot, SlotMatchConfidence
+from src.core.photos import PhotoService
+from src.domain.schemas import PhotoProcessingLog, SlotMatchConfidence
 
 
 @pytest.fixture

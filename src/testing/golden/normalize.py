@@ -10,7 +10,7 @@ Includes replacement counting to detect over-normalization.
 """
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Any
 

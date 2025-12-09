@@ -5,17 +5,14 @@ AGENTS.md 규칙에 따른 테스트 구성:
 - 정상 케이스, 필수 필드 누락 케이스 등 분리
 """
 
-import json
-import shutil
 import threading
 import time
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
 import pytest
 import uvicorn
 import yaml
-
 
 # =============================================================================
 # Path Fixtures

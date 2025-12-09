@@ -6,12 +6,8 @@ DoD:
 - 경고/override 이벤트 기록
 """
 
-import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from unittest.mock import patch
-
-import pytest
 
 from src.core.logging import (
     complete_run_log,
@@ -22,8 +18,6 @@ from src.core.logging import (
     load_run_log,
     save_run_log,
 )
-from src.domain.schemas import RunLog
-
 
 # =============================================================================
 # create_run_log 테스트
@@ -42,9 +36,9 @@ class TestCreateRunLog:
 
     def test_has_started_at(self):
         """started_at 타임스탬프 포함."""
-        before = datetime.now(timezone.utc)
+        before = datetime.now(UTC)
         run_log = create_run_log("JOB-001")
-        after = datetime.now(timezone.utc)
+        after = datetime.now(UTC)
 
         started = datetime.fromisoformat(run_log.started_at)
         assert before <= started <= after
@@ -152,9 +146,9 @@ class TestEmitOverride:
         """override에 타임스탬프 포함."""
         run_log = create_run_log("JOB-001")
 
-        before = datetime.now(timezone.utc)
+        before = datetime.now(UTC)
         emit_override(run_log, "field", "field", "OTHER", "상세 사유 테스트입니다", "user")
-        after = datetime.now(timezone.utc)
+        after = datetime.now(UTC)
 
         override = run_log.overrides[0]
         ts = datetime.fromisoformat(override.timestamp)
@@ -210,9 +204,9 @@ class TestCompleteRunLog:
         """finished_at 설정됨."""
         run_log = create_run_log("JOB-001")
 
-        before = datetime.now(timezone.utc)
+        before = datetime.now(UTC)
         complete_run_log(run_log, success=True)
-        after = datetime.now(timezone.utc)
+        after = datetime.now(UTC)
 
         finished = datetime.fromisoformat(run_log.finished_at)
         assert before <= finished <= after

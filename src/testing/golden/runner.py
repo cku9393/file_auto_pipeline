@@ -11,7 +11,7 @@ from typing import Any
 
 from src.domain.constants import OUTPUT_DOCX_FILENAME, OUTPUT_XLSX_FILENAME
 
-from .compare import assert_golden_match, compare_structures, format_diff_report
+from .compare import assert_golden_match
 from .docx_extract import DocxExtractor
 from .normalize import Normalizer
 from .xlsx_extract import XlsxExtractor
@@ -182,8 +182,8 @@ class GoldenRunner:
         Returns:
             Tuple of (docx_result, xlsx_result) extracted content
         """
-        from src.render.word import DocxRenderer
         from src.render.excel import ExcelRenderer, load_manifest
+        from src.render.word import DocxRenderer
 
         # Prepare output paths
         output_dir = self.output_dir / scenario.name

@@ -28,7 +28,6 @@ purge_mode:
 
 import argparse
 import logging
-import os
 import shutil
 import tarfile
 from dataclasses import dataclass, field

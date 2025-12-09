@@ -7,10 +7,7 @@ test_pipeline_flow.py - 전체 파이프라인 흐름 통합 테스트
 - 최종 산출물 (DOCX/XLSX) 생성
 """
 
-import json
-from decimal import Decimal
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
@@ -18,19 +15,17 @@ from docx import Document
 from openpyxl import Workbook
 from openpyxl.workbook.defined_name import DefinedName
 
+from src.app.services.validate import ValidationService
+from src.core.hashing import compute_packet_hash
+from src.core.ids import generate_job_id
+from src.core.logging import complete_run_log, create_run_log, save_run_log
+from src.core.photos import safe_move, select_photo_for_slot
 from src.core.ssot_job import (
     ensure_job_json,
     load_job_json,
-    atomic_write_json,
 )
-from src.core.ids import generate_job_id, generate_run_id
-from src.core.hashing import compute_packet_hash
-from src.core.logging import create_run_log, complete_run_log, save_run_log
-from src.core.photos import safe_move, select_photo_for_slot
-from src.app.services.validate import ValidationService
-from src.render.word import DocxRenderer
 from src.render.excel import ExcelRenderer
-
+from src.render.word import DocxRenderer
 
 # =============================================================================
 # Fixtures

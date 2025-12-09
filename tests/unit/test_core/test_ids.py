@@ -8,16 +8,13 @@ DoD:
 """
 
 import re
-from datetime import datetime, timezone
-
-import pytest
+from datetime import UTC, datetime
 
 from src.core.ids import (
     _sanitize_for_id,
     generate_job_id,
     generate_run_id,
 )
-
 
 # =============================================================================
 # generate_job_id 테스트
@@ -133,9 +130,9 @@ class TestGenerateRunId:
     def test_contains_timestamp(self):
         """타임스탬프 포함."""
         # generate_run_id는 UTC 사용
-        before = datetime.now(timezone.utc)
+        before = datetime.now(UTC)
         run_id = generate_run_id()
-        after = datetime.now(timezone.utc)
+        after = datetime.now(UTC)
 
         # 포맷: RUN-{timestamp}-{uuid}
         parts = run_id.split("-")
@@ -148,7 +145,7 @@ class TestGenerateRunId:
 
         # 타임스탬프가 before~after 범위 내 (UTC 기준)
         run_time = datetime.strptime(timestamp_part, "%Y%m%d%H%M%S").replace(
-            tzinfo=timezone.utc
+            tzinfo=UTC
         )
         assert before.replace(microsecond=0) <= run_time <= after.replace(microsecond=0)
 

@@ -18,8 +18,7 @@ Selector 안정성 가이드:
 
 import time
 
-from playwright.sync_api import Page, expect
-
+from playwright.sync_api import Page
 
 # =============================================================================
 # 기본 페이지 테스트

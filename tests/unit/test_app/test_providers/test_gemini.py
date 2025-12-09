@@ -6,17 +6,16 @@ ADR-0003 Fallback 예외 정책 검증:
 - REJECT_IMMEDIATELY: InvalidArgument, PermissionDenied, Unauthenticated → 즉시 reject
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
+from src.app.providers.base import OCRError
 from src.app.providers.gemini import (
-    GeminiOCRProvider,
     FALLBACK_ERRORS,
     REJECT_IMMEDIATELY,
+    GeminiOCRProvider,
 )
-from src.app.providers.base import OCRError
-
 
 # =============================================================================
 # Fixtures
@@ -107,8 +106,8 @@ class TestExceptionMapping:
         """FALLBACK_ERRORS에 올바른 예외 포함."""
         from google.api_core.exceptions import (
             NotFound,
-            ServiceUnavailable,
             ResourceExhausted,
+            ServiceUnavailable,
         )
 
         assert NotFound in FALLBACK_ERRORS

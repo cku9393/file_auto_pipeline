@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # .env 파일 로드
 from dotenv import load_dotenv
+
 load_dotenv()
 
 
@@ -135,7 +136,7 @@ async def test_gemini_with_real_image():
         print("📤 OCR 요청 전송 중...")
         result = await provider.extract_text(image_bytes, mime_type)
 
-        print(f"📥 OCR 결과:")
+        print("📥 OCR 결과:")
         print(f"   성공: {result.success}")
         print(f"   텍스트 길이: {len(result.text or '')} 자")
         if result.text:

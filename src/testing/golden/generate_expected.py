@@ -20,7 +20,6 @@ Usage:
 """
 
 import argparse
-import json
 import os
 import sys
 from pathlib import Path
@@ -174,7 +173,7 @@ def main() -> int:
         xlsx_exists = (expected_dir / "xlsx.json").exists()
 
         if (docx_exists or xlsx_exists) and not args.force:
-            print(f"  ⚠ Expected files exist. Use --force to overwrite.")
+            print("  ⚠ Expected files exist. Use --force to overwrite.")
             continue
 
         try:

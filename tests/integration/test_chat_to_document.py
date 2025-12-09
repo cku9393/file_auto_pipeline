@@ -7,22 +7,20 @@ test_chat_to_document.py - 채팅 → 문서 생성 통합 테스트
 - AI Provider mock
 """
 
-import json
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import yaml
 from docx import Document
 
-from src.app.services.intake import IntakeService
+from src.app.providers.base import ExtractionResult, OCRResult
 from src.app.services.extract import ExtractionService
+from src.app.services.intake import IntakeService
 from src.app.services.validate import ValidationService
-from src.app.providers.base import OCRResult, ExtractionResult
-from src.core.ssot_job import ensure_job_json
 from src.core.ids import generate_job_id
+from src.core.ssot_job import ensure_job_json
 from src.render.word import DocxRenderer
-
 
 # =============================================================================
 # Fixtures

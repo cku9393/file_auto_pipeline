@@ -8,7 +8,6 @@ DoD:
 """
 
 import logging
-import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -25,8 +24,7 @@ from src.core.photos import (
     select_photo_for_slot,
 )
 from src.domain.errors import ErrorCodes, PolicyRejectError
-from src.domain.schemas import MoveResult, PhotoSlot
-
+from src.domain.schemas import PhotoSlot
 
 # =============================================================================
 # Fixtures

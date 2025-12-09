@@ -13,10 +13,9 @@ from pathlib import Path
 
 import pytest
 
-from src.domain.errors import PolicyRejectError, ErrorCodes
+from src.app.providers.base import ExtractionResult, OCRResult
 from src.app.services.intake import IntakeService
-from src.app.providers.base import OCRResult, ExtractionResult
-
+from src.domain.errors import ErrorCodes, PolicyRejectError
 
 # =============================================================================
 # Fixtures

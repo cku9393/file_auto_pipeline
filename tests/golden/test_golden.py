@@ -18,17 +18,15 @@ To regenerate expected files (manual review required!):
     python -m src.testing.golden.generate_expected
 """
 
-import json
 from pathlib import Path
 
 import pytest
 
-from src.testing.golden.compare import assert_golden_match, compare_structures
+from src.testing.golden.compare import compare_structures
 from src.testing.golden.docx_extract import DocxExtractor
 from src.testing.golden.normalize import Normalizer
 from src.testing.golden.runner import GoldenRunner, GoldenScenario, discover_scenarios
 from src.testing.golden.xlsx_extract import XlsxExtractor
-
 
 # =============================================================================
 # Fixtures

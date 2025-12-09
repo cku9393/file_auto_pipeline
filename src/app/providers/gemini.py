@@ -11,8 +11,6 @@ import os
 from datetime import UTC, datetime
 from typing import Any
 
-from src.utils.retry import retry_with_exponential_backoff
-
 from .base import OCRError, OCRProvider, OCRResult
 
 logger = logging.getLogger(__name__)

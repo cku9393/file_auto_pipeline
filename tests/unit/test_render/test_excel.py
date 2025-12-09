@@ -17,7 +17,6 @@ from openpyxl.workbook.defined_name import DefinedName
 from src.domain.errors import ErrorCodes, PolicyRejectError
 from src.render.excel import ExcelRenderer, load_manifest, render_xlsx
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================

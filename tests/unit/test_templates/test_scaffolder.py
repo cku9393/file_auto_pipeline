@@ -13,17 +13,15 @@ import pytest
 import yaml
 
 from src.templates.scaffolder import (
+    DetectedField,
     ScaffoldLevel,
     ScaffoldResult,
-    DetectedField,
     TemplateScaffolder,
+    analyze_example_document,
+    detect_labels_rule_based,
     detect_placeholders,
     has_placeholders,
-    detect_labels_rule_based,
-    analyze_example_document,
-    DEFAULT_LABEL_PATTERNS,
 )
-
 
 # =============================================================================
 # Fixtures

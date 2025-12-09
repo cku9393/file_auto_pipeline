@@ -10,15 +10,14 @@ ADR-0003 검증:
 import pytest
 
 from src.app.providers.base import (
-    OCRResult,
-    ExtractionResult,
-    ProviderError,
-    OCRError,
     ExtractionError,
+    ExtractionResult,
     LLMProvider,
+    OCRError,
     OCRProvider,
+    OCRResult,
+    ProviderError,
 )
-
 
 # =============================================================================
 # OCRResult 테스트

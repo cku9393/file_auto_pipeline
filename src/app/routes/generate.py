@@ -20,7 +20,6 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse
 
 from src.core.hashing import compute_packet_full_hash, compute_packet_hash
-from src.core.ids import generate_job_id
 from src.core.logging import (
     complete_run_log,
     create_run_log,
@@ -29,7 +28,7 @@ from src.core.logging import (
     save_run_log,
 )
 from src.core.photos import PhotoService
-from src.core.ssot_job import ensure_job_json, job_lock, load_job_json
+from src.core.ssot_job import job_lock, load_job_json
 from src.domain.constants import (
     JOB_DELIVERABLES_DIR,
     JOB_JSON_FILENAME,
@@ -37,7 +36,6 @@ from src.domain.constants import (
     OUTPUT_XLSX_FILENAME,
 )
 from src.domain.errors import ErrorCodes, PolicyRejectError
-from src.domain.schemas import RunLog
 
 # Routers
 router = APIRouter()  # HTML pages
@@ -141,7 +139,6 @@ async def generate_document(
         생성 결과 (job_id, files, download_url, run_id, photo_processing)
     """
     import json as json_module
-    from pathlib import Path
 
     from src.app.services.intake import IntakeService
     from src.app.services.validate import ValidationService, validate_override_reason
@@ -432,7 +429,7 @@ async def generate_document(
             error_context = e.context
             raise HTTPException(
                 status_code=409,
-                detail=f"동시 접근 충돌: 다른 generate 작업이 진행 중입니다. 잠시 후 다시 시도하세요.",
+                detail="동시 접근 충돌: 다른 generate 작업이 진행 중입니다. 잠시 후 다시 시도하세요.",
             )
         error_code = e.code
         error_context = e.context

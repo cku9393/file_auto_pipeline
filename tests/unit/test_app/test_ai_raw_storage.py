@@ -33,7 +33,6 @@ from src.app.providers.anthropic import ClaudeProvider
 from src.app.providers.base import ExtractionResult, OCRResult
 from src.app.services.intake import IntakeService
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================
@@ -442,7 +441,7 @@ class TestRunLogSecurity:
 
     def test_run_log_does_not_contain_raw_data(self, job_dir: Path):
         """RunLog에는 llm_raw_output, prompt_used가 없음."""
-        from src.domain.schemas import RunLog, WarningLog
+        from src.domain.schemas import RunLog
 
         # RunLog 생성
         run_log = RunLog(

@@ -18,8 +18,6 @@ from zipfile import ZipFile
 
 from docx import Document
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
-from docx.table import Table
-from docx.text.paragraph import Paragraph
 
 from .normalize import Normalizer
 

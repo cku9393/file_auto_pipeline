@@ -11,12 +11,13 @@ ADR-0002 핵심 규칙:
 import json
 import re
 import shutil
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any
 
 import yaml
 from filelock import FileLock, Timeout

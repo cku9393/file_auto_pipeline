@@ -7,14 +7,13 @@ ADR-0003:
 """
 
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import yaml
 
-from src.app.services.extract import ExtractionService
 from src.app.providers.base import ExtractionResult
-
+from src.app.services.extract import ExtractionService
 
 # =============================================================================
 # Fixtures

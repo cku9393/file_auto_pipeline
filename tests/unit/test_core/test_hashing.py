@@ -8,7 +8,6 @@ DoD:
 """
 
 import hashlib
-import json
 from pathlib import Path
 
 import pytest
@@ -21,7 +20,6 @@ from src.core.hashing import (
     get_excluded_fields,
     load_field_types,
 )
-
 
 # =============================================================================
 # Fixtures

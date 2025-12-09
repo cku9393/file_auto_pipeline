@@ -24,7 +24,6 @@ from src.core.ssot_job import (
 )
 from src.domain.errors import ErrorCodes, PolicyRejectError
 
-
 # =============================================================================
 # job_lock 테스트
 # =============================================================================
@@ -338,6 +337,7 @@ class TestJobLockReleaseFailure:
     def test_lock_release_failure_logs_warning(self, tmp_path: Path, test_config: dict, caplog):
         """락 해제 실패 시 warning 로그가 남는지 확인."""
         import logging
+
         from src.core import ssot_job
 
         job_dir = tmp_path / "job"
@@ -470,6 +470,7 @@ class TestDirectoryFsync:
     def test_dir_fsync_failure_logs_warning(self, tmp_path: Path, caplog):
         """디렉토리 fsync 실패 시 warning 로그가 남는지 확인."""
         import logging
+
         from src.core.ssot_job import _fsync_dir
 
         caplog.set_level(logging.WARNING, logger="src.core.ssot_job")
@@ -485,6 +486,7 @@ class TestDirectoryFsync:
     def test_dir_fsync_success_no_warning(self, tmp_path: Path, caplog):
         """디렉토리 fsync 성공 시 warning 없음."""
         import logging
+
         from src.core.ssot_job import _fsync_dir
 
         caplog.set_level(logging.WARNING, logger="src.core.ssot_job")
@@ -640,6 +642,7 @@ class TestStaleLockMeta:
         """stale lock 정리 시 소유자 정보가 로그에 포함되는지 확인."""
         import logging
         from datetime import timedelta
+
         from src.core.ssot_job import (
             LOCK_META_FILENAME,
             STALE_LOCK_THRESHOLD_SECONDS,

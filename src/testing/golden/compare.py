@@ -4,7 +4,6 @@ Golden comparison utilities.
 Provides human-readable diff output for golden test failures.
 """
 
-import json
 from dataclasses import dataclass
 from typing import Any
 

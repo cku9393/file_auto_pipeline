@@ -7,15 +7,12 @@ test_word.py - Word (DOCX) 렌더러 테스트
 """
 
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 from docx import Document
-from docxtpl import DocxTemplate
 
 from src.domain.errors import ErrorCodes, PolicyRejectError
 from src.render.word import DocxRenderer, render_docx
-
 
 # =============================================================================
 # Fixtures

@@ -18,7 +18,12 @@ from typing import TYPE_CHECKING
 import yaml
 
 from src.domain.errors import ErrorCodes, PolicyRejectError
-from src.domain.schemas import MoveResult, PhotoSlot, SlotMatchConfidence, SlotMatchResult
+from src.domain.schemas import (
+    MoveResult,
+    PhotoSlot,
+    SlotMatchConfidence,
+    SlotMatchResult,
+)
 
 if TYPE_CHECKING:
     from src.domain.schemas import PhotoProcessingLog
