@@ -1,0 +1,72 @@
+{
+  "schema_version": "1.0",
+  "session_id": "8ea30f98-d827-46b7-aac1-1575336af4af",
+  "created_at": "2025-12-10T00:45:15.337537+00:00",
+  "immutable": true,
+  "messages": [
+    {
+      "role": "user",
+      "content": "안녕\n",
+      "timestamp": "2025-12-10T00:45:15.507659+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "메시지를 받았습니다. 분석 중...",
+      "timestamp": "2025-12-10T00:45:15.594583+00:00",
+      "attachments": []
+    },
+    {
+      "role": "user",
+      "content": "안녕\n",
+      "timestamp": "2025-12-10T00:45:38.158739+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "메시지를 받았습니다. 분석 중...",
+      "timestamp": "2025-12-10T00:45:38.175349+00:00",
+      "attachments": []
+    },
+    {
+      "role": "user",
+      "content": "안녕\n",
+      "timestamp": "2025-12-10T00:58:14.547673+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "메시지를 받았습니다. 분석 중...",
+      "timestamp": "2025-12-10T00:58:14.567501+00:00",
+      "attachments": []
+    },
+    {
+      "role": "user",
+      "content": "안녕\n",
+      "timestamp": "2025-12-10T01:02:11.891666+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "메시지를 받았습니다. 분석 중...",
+      "timestamp": "2025-12-10T01:02:11.914939+00:00",
+      "attachments": []
+    },
+    {
+      "role": "user",
+      "content": "안녕\n",
+      "timestamp": "2025-12-10T01:16:51.782902+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "메시지를 받았습니다. 분석 중...",
+      "timestamp": "2025-12-10T01:16:51.834895+00:00",
+      "attachments": []
+    }
+  ],
+  "ocr_results": {},
+  "extraction_result": null,
+  "user_corrections": [],
+  "photo_mappings": []
+}

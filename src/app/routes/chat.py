@@ -9,9 +9,11 @@ spec-v2.md Section 4.3.1:
 """
 
 import asyncio
+import html as html_escape_module
 import json
 import uuid
 from collections.abc import AsyncGenerator
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -19,14 +21,68 @@ from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, StreamingResponse
 
 from src.app.services.intake import IntakeService
+from src.core.ssot_job import atomic_write_json
 
 # Routers
 router = APIRouter()  # HTML pages
 api_router = APIRouter()  # API endpoints
 
-# Session storage (in-memory session_id -> job_id mapping)
-# In production, this should use Redis or database
+# Session storage (in-memory cache - disk is source of truth)
 _session_to_job: dict[str, str] = {}
+
+# Default timeout for extraction (seconds)
+DEFAULT_EXTRACTION_TIMEOUT = 60.0
+
+
+# =============================================================================
+# Session-Job Mapping Persistence
+# =============================================================================
+
+
+def _get_sessions_dir(jobs_root: Path) -> Path:
+    """세션 매핑 저장 디렉토리."""
+    sessions_dir = jobs_root / "_sessions"
+    sessions_dir.mkdir(parents=True, exist_ok=True)
+    return sessions_dir
+
+
+def _load_session_mapping(jobs_root: Path, session_id: str) -> str | None:
+    """
+    디스크에서 세션-잡 매핑 로드.
+
+    Returns:
+        job_id if found, None otherwise
+    """
+    session_file = _get_sessions_dir(jobs_root) / f"{session_id}.json"
+    if session_file.exists():
+        try:
+            data = json.loads(session_file.read_text(encoding="utf-8"))
+            return data.get("job_id")
+        except (json.JSONDecodeError, OSError):
+            return None
+    return None
+
+
+def _save_session_mapping(jobs_root: Path, session_id: str, job_id: str) -> None:
+    """
+    세션-잡 매핑을 디스크에 원자적으로 저장.
+
+    경합 시 "이미 존재하면 그걸 사용" 정책.
+    """
+    session_file = _get_sessions_dir(jobs_root) / f"{session_id}.json"
+
+    # 이미 존재하면 기존 것 사용 (경합 방지)
+    if session_file.exists():
+        return
+
+    now = datetime.now(UTC).isoformat()
+    data = {
+        "session_id": session_id,
+        "job_id": job_id,
+        "created_at": now,
+        "updated_at": now,
+    }
+    atomic_write_json(session_file, data)
 
 
 def get_or_create_intake(request: Request, session_id: str) -> IntakeService:
@@ -34,19 +90,82 @@ def get_or_create_intake(request: Request, session_id: str) -> IntakeService:
     세션 ID에 대응하는 IntakeService 반환.
 
     새 세션이면 job 폴더 생성, 기존이면 로드.
+    디스크가 source of truth, 메모리는 캐시.
     """
     jobs_root: Path = request.app.state.jobs_root
 
-    # 기존 매핑 확인
+    # 1. 메모리 캐시 확인
     if session_id in _session_to_job:
         job_id = _session_to_job[session_id]
     else:
-        # 새 Job ID 생성
-        job_id = f"JOB-{uuid.uuid4().hex[:8].upper()}"
+        # 2. 디스크에서 로드 시도
+        job_id = _load_session_mapping(jobs_root, session_id)
+
+        if job_id is None:
+            # 3. 새 Job ID 생성
+            job_id = f"JOB-{uuid.uuid4().hex[:8].upper()}"
+            _save_session_mapping(jobs_root, session_id, job_id)
+
+        # 캐시 업데이트
         _session_to_job[session_id] = job_id
 
     job_dir = jobs_root / job_id
     return IntakeService(job_dir)
+
+
+def get_job_id_for_session(request: Request, session_id: str) -> str:
+    """세션 ID에 대응하는 Job ID 반환."""
+    jobs_root: Path = request.app.state.jobs_root
+
+    # 메모리 캐시 우선
+    if session_id in _session_to_job:
+        return _session_to_job[session_id]
+
+    # 디스크에서 로드
+    job_id = _load_session_mapping(jobs_root, session_id)
+    if job_id:
+        _session_to_job[session_id] = job_id
+        return job_id
+
+    return "unknown"
+
+
+# =============================================================================
+# HTML Generation Helpers
+# =============================================================================
+
+
+def escape_html(text: str) -> str:
+    """HTML 이스케이프."""
+    return html_escape_module.escape(text)
+
+
+def build_user_message_html(content: str) -> str:
+    """사용자 메시지 HTML 생성."""
+    return f'<div class="message user">{escape_html(content)}</div>'
+
+
+def build_assistant_message_html(content: str, job_id: str | None = None) -> str:
+    """
+    어시스턴트 메시지 HTML 생성.
+
+    Args:
+        content: 메시지 내용 (HTML 허용 - 이미 escape된 것으로 가정하거나 safe HTML)
+        job_id: Job ID (있으면 표시)
+    """
+    job_info = ""
+    if job_id:
+        job_info = f'<br><small class="job-info">📁 Job: {escape_html(job_id)}</small>'
+
+    return f'''<div class="message assistant">
+        {content}{job_info}
+    </div>'''
+
+
+def build_oob_session_input(session_id: str) -> str:
+    """HTMX OOB session_id hidden input 생성."""
+    return f'''<input type="hidden" name="session_id" id="session-id"
+           value="{escape_html(session_id)}" hx-swap-oob="true">'''
 
 
 # =============================================================================
@@ -160,14 +279,15 @@ async def send_message(
     session_id: str | None = Form(None),
 ) -> HTMLResponse:
     """
-    채팅 메시지 전송.
+    채팅 메시지 전송 + 동기 분석(추출/검증) 수행.
 
     Returns:
-        새 메시지 HTML (HTMX swap용)
+        새 메시지 HTML (HTMX swap용) + session_id OOB 업데이트
     """
-    import html as html_escape
+    from src.app.services.extract import ExtractionService
+    from src.app.services.validate import ValidationService
 
-    # 세션 ID 생성/검증
+    # 1) 세션 ID 생성/유지
     if not session_id:
         session_id = str(uuid.uuid4())
 
@@ -177,30 +297,130 @@ async def send_message(
     # 사용자 메시지 저장
     intake.add_message(role="user", content=content)
 
-    # 어시스턴트 응답 생성 (TODO: 실제 LLM 연동)
-    assistant_response = "메시지를 받았습니다. 분석 중..."
+    # Job ID 표시
+    job_id = get_job_id_for_session(request, session_id)
+
+    # 2) 분석(추출+검증)을 여기서 실제로 수행
+    assistant_response: str
+    try:
+        session = intake.load_session()
+
+        # 모든 사용자 메시지 수집
+        user_messages = [m.content for m in session.messages if m.role == "user"]
+        user_input = "\n".join(user_messages)
+
+        # OCR 결과 수집
+        ocr_texts = [
+            r.text
+            for r in session.ocr_results.values()
+            if r.success and r.text
+        ]
+        ocr_text = "\n".join(ocr_texts) if ocr_texts else None
+
+        # 서비스 초기화
+        config = request.app.state.config
+        definition_path: Path = request.app.state.definition_path
+        prompts_dir = Path(__file__).parent.parent.parent.parent / "prompts"
+
+        extraction_service = ExtractionService(
+            config=config,
+            definition_path=definition_path,
+            prompts_dir=prompts_dir,
+        )
+
+        # 타임아웃 설정
+        timeout = config.get("ai", {}).get(
+            "extraction_timeout", DEFAULT_EXTRACTION_TIMEOUT
+        )
+
+        # 추출 실행 (타임아웃 적용)
+        try:
+            extraction_result = await asyncio.wait_for(
+                extraction_service.extract(
+                    user_input=user_input,
+                    ocr_text=ocr_text,
+                ),
+                timeout=timeout,
+            )
+        except asyncio.TimeoutError:
+            assistant_response = (
+                "분석 시간 초과 ⏱️<br>"
+                "외부 AI 서비스 응답이 지연되고 있습니다.<br>"
+                "잠시 후 다시 시도해주세요."
+            )
+            intake.add_message(role="assistant", content=assistant_response)
+            user_html = build_user_message_html(content)
+            assistant_html = build_assistant_message_html(assistant_response, job_id)
+            oob_session = build_oob_session_input(session_id)
+            return HTMLResponse(content=user_html + assistant_html + oob_session)
+
+        intake.add_extraction_result(extraction_result)
+
+        # 검증 실행
+        validation_service = ValidationService(definition_path)
+        validation = validation_service.validate(
+            fields=extraction_result.fields,
+            measurements=extraction_result.measurements,
+        )
+
+        # 결과에 따른 응답 생성
+        if validation.valid:
+            assistant_response = (
+                "분석 완료 ✅<br>"
+                f"- 추출된 필드: {len(extraction_result.fields)}개<br>"
+                f"- 누락 필수값: 없음<br>"
+                f"- 경고: {len(validation.warnings)}개"
+            )
+        else:
+            missing = (
+                ", ".join(validation.missing_required)
+                if validation.missing_required
+                else "없음"
+            )
+            assistant_response = (
+                "분석 결과 ⚠️<br>"
+                f"- 추출된 필드: {len(extraction_result.fields)}개<br>"
+                f"- 누락 필수값: {escape_html(missing)}<br>"
+                "누락값을 채워주시거나 override 해주세요."
+            )
+
+    except asyncio.TimeoutError:
+        # 이미 위에서 처리됨 - 안전장치
+        assistant_response = (
+            "분석 시간 초과 ⏱️<br>"
+            "외부 AI 서비스 응답이 지연되고 있습니다."
+        )
+    except Exception as e:
+        # 에러 유형별 사용자 친화적 메시지
+        error_msg = str(e)
+        if "api_key" in error_msg.lower() or "authentication" in error_msg.lower():
+            assistant_response = (
+                "분석 실패 ❌<br>"
+                "API 인증 문제가 발생했습니다.<br>"
+                "관리자에게 문의해주세요."
+            )
+        elif "rate" in error_msg.lower() or "limit" in error_msg.lower():
+            assistant_response = (
+                "분석 실패 ❌<br>"
+                "API 호출 한도에 도달했습니다.<br>"
+                "잠시 후 다시 시도해주세요."
+            )
+        else:
+            # 보안: raw 에러 전체 노출 금지
+            assistant_response = (
+                f"분석 실패 ❌<br>"
+                f"오류가 발생했습니다: {escape_html(error_msg[:100])}"
+            )
 
     # 어시스턴트 응답 저장
     intake.add_message(role="assistant", content=assistant_response)
 
-    # Job ID 표시
-    job_id = _session_to_job.get(session_id, "unknown")
+    # HTML 생성
+    user_html = build_user_message_html(content)
+    assistant_html = build_assistant_message_html(assistant_response, job_id)
+    oob_session = build_oob_session_input(session_id)
 
-    # HTML 이스케이프 처리
-    safe_content = html_escape.escape(content)
-
-    user_html = f"""
-    <div class="message user">{safe_content}</div>
-    """
-
-    assistant_html = f"""
-    <div class="message assistant">
-        {assistant_response}<br>
-        <small class="job-info">📁 Job: {job_id}</small>
-    </div>
-    """
-
-    return HTMLResponse(content=user_html + assistant_html)
+    return HTMLResponse(content=user_html + assistant_html + oob_session)
 
 
 @api_router.post("/upload")
@@ -218,7 +438,7 @@ async def upload_file(
     3. OCR 자동 실행
 
     Returns:
-        업로드 결과 (filename, size, path, slot_mapped, ocr_result)
+        업로드 결과 (filename, size, path, slot_mapped, ocr_result, messages_html)
     """
     from src.app.services.ocr import OCRService
     from src.core.photos import PhotoService
@@ -230,12 +450,13 @@ async def upload_file(
     # 파일 읽기
     file_bytes = await file.read()
     filename = file.filename or "unknown"
+    safe_filename = escape_html(filename)
 
     # IntakeService 연동
     intake = get_or_create_intake(request, session_id)
 
     # Job ID
-    job_id = _session_to_job.get(session_id, "unknown")
+    job_id = get_job_id_for_session(request, session_id)
     jobs_root: Path = request.app.state.jobs_root
     job_dir = jobs_root / job_id
     definition_path: Path = request.app.state.definition_path
@@ -248,6 +469,9 @@ async def upload_file(
     slot_key: str | None = None
     raw_path: str | None = None
 
+    # UI에 표시할 HTML 메시지 조각들
+    html_parts: list[str] = []
+
     # 사진 슬롯 매핑 처리
     if file_ext in photo_extensions:
         photo_service = PhotoService(job_dir, definition_path)
@@ -259,6 +483,15 @@ async def upload_file(
         saved_path = photo_service.save_upload(filename, file_bytes)
         raw_path = str(saved_path)
 
+        # 사용자 메시지: [사진 첨부: ...]
+        user_content = f"[사진 첨부: {filename}]"
+        intake.add_message(
+            role="user",
+            content=user_content,
+            attachments=[(filename, file_bytes)],
+        )
+        html_parts.append(build_user_message_html(user_content))
+
         if matched_slot:
             # 슬롯 매핑 기록
             intake.add_photo_mapping(
@@ -269,55 +502,75 @@ async def upload_file(
             slot_key = matched_slot.key
 
             # 어시스턴트 메시지
-            intake.add_message(
-                role="assistant",
-                content=f"📷 사진이 '{matched_slot.key}' 슬롯에 매핑되었습니다.",
-            )
+            slot_msg = f"📷 사진이 '{escape_html(matched_slot.key)}' 슬롯에 매핑되었습니다."
+            intake.add_message(role="assistant", content=slot_msg)
+            html_parts.append(build_assistant_message_html(slot_msg))
         else:
             # 슬롯 미매칭 - 일반 사진으로 저장됨
-            intake.add_message(
-                role="assistant",
-                content=f"📷 사진이 저장되었습니다. (슬롯 미매칭: {filename})",
-            )
+            slot_msg = f"📷 사진이 저장되었습니다. (슬롯 미매칭: {safe_filename})"
+            intake.add_message(role="assistant", content=slot_msg)
+            html_parts.append(build_assistant_message_html(slot_msg))
 
-        # 파일 첨부 메시지
-        intake.add_message(
-            role="user",
-            content=f"[사진 첨부: {filename}]",
-            attachments=[(filename, file_bytes)],
-        )
     else:
-        # 비-사진 파일은 기존 로직 유지
+        # 비-사진 파일
+        user_content = f"[파일 첨부: {filename}]"
         intake.add_message(
             role="user",
-            content=f"[파일 첨부: {filename}]",
+            content=user_content,
             attachments=[(filename, file_bytes)],
         )
+        html_parts.append(build_user_message_html(user_content))
 
     # OCR 처리 (이미지/PDF)
     ocr_result = None
+    ocr_detail_msg: str | None = None
+
     if file_ext in ocr_extensions:
         try:
             config = request.app.state.config
+
+            # OCR 타임아웃 적용
+            ocr_timeout = config.get("ai", {}).get("ocr_timeout", 30.0)
             ocr_service = OCRService(config)
-            ocr_result = await ocr_service.extract_from_bytes(file_bytes, file_ext)
 
-            # OCR 결과를 intake_session.json에 저장
-            intake.add_ocr_result(filename, ocr_result)
+            try:
+                ocr_result = await asyncio.wait_for(
+                    ocr_service.extract_from_bytes(file_bytes, file_ext),
+                    timeout=ocr_timeout,
+                )
+            except asyncio.TimeoutError:
+                ocr_detail_msg = (
+                    f"OCR 시간 초과 ⏱️<br>"
+                    f"파일 '{safe_filename}'의 텍스트 추출이 지연되고 있습니다."
+                )
+                intake.add_message(role="assistant", content=ocr_detail_msg)
+                html_parts.append(build_assistant_message_html(ocr_detail_msg))
+            else:
+                # OCR 결과를 intake_session.json에 저장
+                intake.add_ocr_result(filename, ocr_result)
 
-            # 사용자에게 OCR 결과 메시지 전달
-            user_message = ocr_service.get_user_message(ocr_result)
-            intake.add_message(
-                role="assistant",
-                content=user_message,
-            )
+                # 사용자에게 OCR 결과 메시지 전달
+                ocr_detail_msg = ocr_service.get_user_message(ocr_result)
+                intake.add_message(role="assistant", content=ocr_detail_msg)
+                html_parts.append(build_assistant_message_html(ocr_detail_msg))
 
         except Exception as e:
             # OCR 실패 시에도 파일은 저장되도록
-            intake.add_message(
-                role="assistant",
-                content=f"OCR 처리 중 오류가 발생했습니다: {str(e)}",
-            )
+            error_msg = escape_html(str(e)[:100])
+            ocr_detail_msg = f"OCR 처리 중 오류가 발생했습니다: {error_msg}"
+            intake.add_message(role="assistant", content=ocr_detail_msg)
+            html_parts.append(build_assistant_message_html(ocr_detail_msg))
+
+    # Job ID 표시 (완료 메시지 추가)
+    if html_parts:
+        complete_msg = f"📁 Job: {escape_html(job_id)} - 업로드 완료"
+        html_parts.append(
+            f'<div class="message assistant upload-complete">'
+            f'<small class="job-info">{complete_msg}</small></div>'
+        )
+
+    # 전체 HTML 조립
+    messages_html = "\n".join(html_parts)
 
     return {
         "success": True,
@@ -330,6 +583,12 @@ async def upload_file(
         "raw_path": raw_path,
         "ocr_executed": ocr_result is not None,
         "ocr_success": ocr_result.success if ocr_result else None,
+        "ocr_text_preview": (
+            ocr_result.text[:200] + "..."
+            if ocr_result and ocr_result.text and len(ocr_result.text) > 200
+            else (ocr_result.text if ocr_result else None)
+        ),
+        "messages_html": messages_html,
     }
 
 

@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "session_id": "72f2b08b-cd74-45bb-bd6d-22ffd2a02a71",
+  "created_at": "2025-12-10T06:16:14.563081+00:00",
+  "immutable": true,
+  "messages": [
+    {
+      "role": "user",
+      "content": "안녕\n",
+      "timestamp": "2025-12-10T06:16:14.597646+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "분석 실패 ❌<br>오류가 발생했습니다: [EXTRACTION_FAILED] API 키 설정을 확인해주세요.",
+      "timestamp": "2025-12-10T06:16:17.795491+00:00",
+      "attachments": []
+    },
+    {
+      "role": "user",
+      "content": "안녕\n",
+      "timestamp": "2025-12-10T06:29:58.834655+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "분석 실패 ❌<br>오류가 발생했습니다: [EXTRACTION_FAILED] API 키 설정을 확인해주세요.",
+      "timestamp": "2025-12-10T06:29:59.569694+00:00",
+      "attachments": []
+    },
+    {
+      "role": "user",
+      "content": "안녕\n",
+      "timestamp": "2025-12-10T06:30:32.322917+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "분석 실패 ❌<br>오류가 발생했습니다: [EXTRACTION_FAILED] API 키 설정을 확인해주세요.",
+      "timestamp": "2025-12-10T06:30:33.812453+00:00",
+      "attachments": []
+    },
+    {
+      "role": "user",
+      "content": "안녕\n",
+      "timestamp": "2025-12-10T06:39:23.050651+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "분석 실패 ❌<br>오류가 발생했습니다: [EXTRACTION_FAILED] API 키 설정을 확인해주세요.",
+      "timestamp": "2025-12-10T06:39:24.600997+00:00",
+      "attachments": []
+    }
+  ],
+  "ocr_results": {},
+  "extraction_result": null,
+  "user_corrections": [],
+  "photo_mappings": []
+}
