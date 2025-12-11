@@ -370,6 +370,7 @@ class TestTimeout:
     @pytest.mark.asyncio
     async def test_extraction_timeout_message(self):
         """추출 타임아웃 시 사용자 메시지."""
+
         # asyncio.wait_for 타임아웃 시뮬레이션
         async def slow_extract():
             await asyncio.sleep(10)

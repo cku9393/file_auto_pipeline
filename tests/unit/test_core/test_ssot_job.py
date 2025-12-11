@@ -773,12 +773,8 @@ class TestAtomicWriteJsonExclusive:
             result = atomic_write_json_exclusive(file_path, data)
             results.append((name, result))
 
-        t1 = threading.Thread(
-            target=try_write, args=("t1", {"writer": "t1", "id": 1})
-        )
-        t2 = threading.Thread(
-            target=try_write, args=("t2", {"writer": "t2", "id": 2})
-        )
+        t1 = threading.Thread(target=try_write, args=("t1", {"writer": "t1", "id": 1}))
+        t2 = threading.Thread(target=try_write, args=("t2", {"writer": "t2", "id": 2}))
 
         t1.start()
         t2.start()

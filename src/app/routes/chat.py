@@ -27,7 +27,9 @@ from src.templates.manager import TemplateManager
 
 # Jinja2 템플릿 설정
 _templates_dir = Path(__file__).parent.parent / "templates"
-jinja_templates = Jinja2Templates(directory=_templates_dir) if _templates_dir.exists() else None
+jinja_templates = (
+    Jinja2Templates(directory=_templates_dir) if _templates_dir.exists() else None
+)
 
 # Routers
 router = APIRouter()  # HTML pages
@@ -192,9 +194,9 @@ def build_assistant_message_html(content: str, job_id: str | None = None) -> str
     if job_id:
         job_info = f'<br><small class="job-info">📁 Job: {escape_html(job_id)}</small>'
 
-    return f'''<div class="message assistant">
+    return f"""<div class="message assistant">
         {content}{job_info}
-    </div>'''
+    </div>"""
 
 
 def build_oob_session_input(session_id: str) -> str:
@@ -354,9 +356,7 @@ async def send_message(
 
         # OCR 결과 수집
         ocr_texts = [
-            r.text
-            for r in session.ocr_results.values()
-            if r.success and r.text
+            r.text for r in session.ocr_results.values() if r.success and r.text
         ]
         has_ocr = bool(ocr_texts)
 
@@ -458,8 +458,7 @@ async def send_message(
     except TimeoutError:
         # 이미 위에서 처리됨 - 안전장치
         assistant_response = (
-            "분석 시간 초과 ⏱️<br>"
-            "외부 AI 서비스 응답이 지연되고 있습니다."
+            "분석 시간 초과 ⏱️<br>외부 AI 서비스 응답이 지연되고 있습니다."
         )
     except Exception as e:
         # 에러 유형별 사용자 친화적 메시지
@@ -479,8 +478,7 @@ async def send_message(
         else:
             # 보안: raw 에러 전체 노출 금지
             assistant_response = (
-                f"분석 실패 ❌<br>"
-                f"오류가 발생했습니다: {escape_html(error_msg[:100])}"
+                f"분석 실패 ❌<br>오류가 발생했습니다: {escape_html(error_msg[:100])}"
             )
 
     # 어시스턴트 응답 저장
@@ -574,7 +572,9 @@ async def upload_file(
             slot_key = matched_slot.key
 
             # 어시스턴트 메시지
-            slot_msg = f"📷 사진이 '{escape_html(matched_slot.key)}' 슬롯에 매핑되었습니다."
+            slot_msg = (
+                f"📷 사진이 '{escape_html(matched_slot.key)}' 슬롯에 매핑되었습니다."
+            )
             intake.add_message(role="assistant", content=slot_msg)
             html_parts.append(build_assistant_message_html(slot_msg))
         else:
@@ -649,12 +649,13 @@ async def upload_file(
     if can_register_as_template:
         # 파일명에서 템플릿 ID 후보 생성 (확장자 제거, 소문자화, 특수문자→언더스코어)
         import re
+
         stem = Path(filename).stem
         suggested_template_id = re.sub(r"[^a-z0-9]+", "_", stem.lower()).strip("_")
         suggested_display_name = stem
 
         # 템플릿 등록 버튼 HTML (HTMX로 모달 열기)
-        template_btn_html = f'''
+        template_btn_html = f"""
         <div class="message assistant template-register-prompt">
             <p>📝 이 파일을 템플릿으로 등록할 수 있습니다.</p>
             <button type="button"
@@ -663,7 +664,7 @@ async def upload_file(
                 📋 템플릿으로 등록
             </button>
         </div>
-        '''
+        """
         html_parts.append(template_btn_html)
 
     # 전체 HTML 조립
@@ -688,8 +689,12 @@ async def upload_file(
         "messages_html": messages_html,
         # 템플릿 등록 가능 여부
         "can_register_as_template": can_register_as_template,
-        "suggested_template_id": suggested_template_id if can_register_as_template else None,
-        "suggested_display_name": suggested_display_name if can_register_as_template else None,
+        "suggested_template_id": suggested_template_id
+        if can_register_as_template
+        else None,
+        "suggested_display_name": suggested_display_name
+        if can_register_as_template
+        else None,
     }
 
 
