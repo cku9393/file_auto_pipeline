@@ -65,7 +65,8 @@ def _load_session_mapping(jobs_root: Path, session_id: str) -> str | None:
     if session_file.exists():
         try:
             data = json.loads(session_file.read_text(encoding="utf-8"))
-            return data.get("job_id")
+            job_id = data.get("job_id")
+            return str(job_id) if job_id is not None else None
         except (json.JSONDecodeError, OSError):
             return None
     return None
@@ -128,20 +129,23 @@ def get_or_create_intake(request: Request, session_id: str) -> IntakeService:
     TOCTOU-safe: O_EXCL 패턴으로 경합 시에도 동일 job_id 보장.
     """
     jobs_root: Path = request.app.state.jobs_root
+    job_id: str  # 최종적으로 항상 str이 됨
 
     # 1. 메모리 캐시 확인
     if session_id in _session_to_job:
         job_id = _session_to_job[session_id]
     else:
         # 2. 디스크에서 로드 시도
-        job_id = _load_session_mapping(jobs_root, session_id)
+        loaded_job_id = _load_session_mapping(jobs_root, session_id)
 
-        if job_id is None:
+        if loaded_job_id is None:
             # 3. 새 Job ID 생성 시도 (TOCTOU-safe)
             candidate_job_id = f"JOB-{uuid.uuid4().hex[:8].upper()}"
             # _save_session_mapping이 실제 사용할 job_id를 반환
             # (경합 시 기존 job_id, 아니면 candidate_job_id)
             job_id = _save_session_mapping(jobs_root, session_id, candidate_job_id)
+        else:
+            job_id = loaded_job_id
 
         # 캐시 업데이트
         _session_to_job[session_id] = job_id

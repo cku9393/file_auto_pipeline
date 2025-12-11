@@ -123,8 +123,8 @@ def normalize_result_field(fields: dict[str, Any]) -> None:
 
         # FAIL 계열 먼저 체크 (FAIL이 PASS보다 우선)
         # 영문 토큰 또는 한글 키워드 포함 체크
-        korean_fail = {"불합격"}
-        korean_pass = {"합격"}
+        korean_fail: frozenset[str] = frozenset({"불합격"})
+        korean_pass: frozenset[str] = frozenset({"합격"})
 
         if (tokens & FAIL_TOKENS) or _contains_korean_token(s, korean_fail):
             fields["result"] = "FAIL"
