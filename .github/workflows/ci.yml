@@ -9,6 +9,9 @@ on:
 env:
   PYTHON_VERSION: "3.12"
   UV_VERSION: "0.5"
+  # Anthropic API 키 (필요한 경우)
+  # 이 프로젝트는 MY_ANTHROPIC_KEY만 사용합니다 (ANTHROPIC_API_KEY 아님)
+  # MY_ANTHROPIC_KEY: ${{ secrets.FILE_PIPELINE_ANTHROPIC_KEY }}
 
 jobs:
   lint:

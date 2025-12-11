@@ -111,25 +111,37 @@ def sample_prompt_template():
 class TestClaudeProviderInit:
     """ClaudeProvider 초기화 테스트."""
 
-    def test_init_with_defaults(self):
-        """기본값으로 초기화."""
+    def test_init_with_defaults(self, monkeypatch):
+        """기본값으로 초기화 (API 키는 환경변수에서)."""
+        monkeypatch.setenv("MY_ANTHROPIC_KEY", "test-api-key")
         provider = ClaudeProvider()
 
         assert provider.model == "claude-opus-4-5-20251101"
         assert provider.max_tokens == 4096
 
-    def test_init_with_custom_model(self):
+    def test_init_with_custom_model(self, monkeypatch):
         """커스텀 모델로 초기화."""
+        monkeypatch.setenv("MY_ANTHROPIC_KEY", "test-api-key")
         provider = ClaudeProvider(model="claude-sonnet-4-20250514", max_tokens=2048)
 
         assert provider.model == "claude-sonnet-4-20250514"
         assert provider.max_tokens == 2048
 
     def test_init_with_api_key(self):
-        """API 키 설정."""
+        """API 키 설정 (인자로 전달)."""
         provider = ClaudeProvider(api_key="my-api-key")
 
         assert provider.api_key == "my-api-key"
+
+    def test_init_without_api_key_raises_error(self, monkeypatch):
+        """API 키가 없으면 명확한 에러 발생."""
+        monkeypatch.delenv("MY_ANTHROPIC_KEY", raising=False)
+
+        with pytest.raises(ExtractionError) as exc_info:
+            ClaudeProvider()
+
+        assert "MY_ANTHROPIC_KEY" in str(exc_info.value)
+        assert "ANTHROPIC_API_KEY를 사용하지 않습니다" in str(exc_info.value)
 
     def test_init_uses_env_api_key(self, monkeypatch):
         """환경변수에서 API 키 로드."""

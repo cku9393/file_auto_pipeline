@@ -1679,6 +1679,7 @@ AuthenticationError: Invalid API key
 **해결:**
 ```bash
 # 환경 변수 확인
+# ⚠️ 이 프로젝트는 MY_ANTHROPIC_KEY만 사용합니다 (ANTHROPIC_API_KEY 아님)
 echo $MY_ANTHROPIC_KEY
 echo $GOOGLE_API_KEY
 

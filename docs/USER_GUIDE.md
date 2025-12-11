@@ -76,6 +76,8 @@ cp .env.example .env
 
 ```env
 # Anthropic Claude API
+# ⚠️ 이 프로젝트는 MY_ANTHROPIC_KEY만 사용합니다 (ANTHROPIC_API_KEY 아님)
+#    Claude Code 등 외부 도구와 키 네임스페이스가 섞이지 않도록 분리했습니다.
 MY_ANTHROPIC_KEY=sk-ant-xxxxxxxxxxxxx
 
 # Google Gemini API
