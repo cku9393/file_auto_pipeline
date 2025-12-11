@@ -129,8 +129,7 @@ def _save_session_mapping(jobs_root: Path, session_id: str, job_id: str) -> str:
 
     # 정말 실패 시 에러 발생 (데이터 무결성 보장)
     raise RuntimeError(
-        f"세션 매핑 경합 실패: session_id={session_id}. "
-        f"파일이 존재하지만 읽기 실패."
+        f"세션 매핑 경합 실패: session_id={session_id}. 파일이 존재하지만 읽기 실패."
     )
 
 
