@@ -70,6 +70,9 @@ ignore = [
     "B008",  # function call in default argument (FastAPI File/Form pattern)
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"src/app/main.py" = ["E402"]  # load_dotenv()가 다른 import보다 먼저 실행되어야 함
+
 [tool.mypy]
 python_version = "3.11"
 warn_return_any = true

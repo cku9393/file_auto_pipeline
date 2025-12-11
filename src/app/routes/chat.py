@@ -408,7 +408,7 @@ async def send_message(
                 ),
                 timeout=timeout,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             assistant_response = (
                 "분석 시간 초과 ⏱️<br>"
                 "외부 AI 서비스 응답이 지연되고 있습니다.<br>"
@@ -455,7 +455,7 @@ async def send_message(
                 "누락값을 채워주시거나 override 해주세요."
             )
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         # 이미 위에서 처리됨 - 안전장치
         assistant_response = (
             "분석 시간 초과 ⏱️<br>"
@@ -610,7 +610,7 @@ async def upload_file(
                     ocr_service.extract_from_bytes(file_bytes, file_ext),
                     timeout=ocr_timeout,
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 ocr_detail_msg = (
                     f"OCR 시간 초과 ⏱️<br>"
                     f"파일 '{safe_filename}'의 텍스트 추출이 지연되고 있습니다."
