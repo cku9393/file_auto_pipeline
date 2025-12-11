@@ -11,6 +11,7 @@ spec-v2.md Section 4.3.1:
 import asyncio
 import html as html_escape_module
 import json
+import time
 import uuid
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
@@ -80,13 +81,10 @@ def _save_session_mapping(jobs_root: Path, session_id: str, job_id: str) -> str:
     - 파일이 없으면: 새로 생성하고 job_id 반환
     - 파일이 있으면: 기존 job_id를 읽어서 반환 (덮어쓰지 않음)
 
-    이전 구현의 TOCTOU 취약점:
-        if session_file.exists():  # ← Time of Check
-            return
-        atomic_write_json(...)      # ← Time of Use (경합 윈도우!)
-
-    현재 구현:
-        O_CREAT | O_EXCL로 원자적 "존재 확인 + 생성"
+    경합 시나리오:
+    1. Thread A: O_EXCL 성공 → 파일 쓰기 시작
+    2. Thread B: O_EXCL 실패 → 파일 읽기 시도
+    3. Thread B: 파일이 아직 쓰기 중 → 재시도
 
     Args:
         jobs_root: jobs 루트 디렉토리
@@ -110,13 +108,30 @@ def _save_session_mapping(jobs_root: Path, session_id: str, job_id: str) -> str:
     if atomic_write_json_exclusive(session_file, data):
         # 새로 생성됨 → 전달받은 job_id 사용
         return job_id
-    else:
-        # 이미 존재 → 기존 job_id 읽어서 반환
+
+    # 이미 존재 → 기존 job_id 읽어서 반환 (재시도 로직으로 쓰기 완료 대기)
+    # 경합 시 다른 스레드가 파일 쓰기를 완료할 때까지 짧게 대기
+    max_retries = 10
+    retry_delay = 0.01  # 10ms
+
+    for _attempt in range(max_retries):
         existing_job_id = _load_session_mapping(jobs_root, session_id)
         if existing_job_id:
             return existing_job_id
-        # 매우 드문 경우: 파일 존재하지만 읽기 실패 → 전달받은 job_id 사용
-        return job_id
+        # 파일이 존재하지만 아직 쓰기가 완료되지 않음 → 잠시 대기 후 재시도
+        time.sleep(retry_delay)
+
+    # 최대 재시도 후에도 실패 (매우 드문 경우)
+    # 마지막으로 한 번 더 시도
+    existing_job_id = _load_session_mapping(jobs_root, session_id)
+    if existing_job_id:
+        return existing_job_id
+
+    # 정말 실패 시 에러 발생 (데이터 무결성 보장)
+    raise RuntimeError(
+        f"세션 매핑 경합 실패: session_id={session_id}. "
+        f"파일이 존재하지만 읽기 실패."
+    )
 
 
 def get_or_create_intake(request: Request, session_id: str) -> IntakeService:
