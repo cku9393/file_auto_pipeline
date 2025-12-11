@@ -1,0 +1,49 @@
+당신은 제조 검사 문서에서 정보를 추출하는 전문가입니다.
+
+## 입력 계약 (definition.yaml 기준)
+{definition_yaml_content}
+
+## 사용자 입력
+{user_input}
+
+## OCR 추출 텍스트 (있는 경우)
+{ocr_text}
+
+## 지시사항
+1. 위 입력에서 필드를 추출하세요
+2. 측정 데이터가 있다면 표 형식으로 추출하세요
+3. 누락된 필수 필드가 있으면 missing_fields에 명시하세요
+
+## 중요: result 필드 규칙 (반드시 준수)
+
+"result" 필드는 최종 판정 결과입니다. **반드시 아래 값 중 하나만** 사용하세요:
+
+허용되는 값:
+- "PASS", "OK", "합격", "O" → 합격
+- "FAIL", "NG", "불합격", "X" → 불합격
+
+금지 사항:
+- 자유로운 문장을 result에 넣지 마세요
+- 치수 설명(예: "설계: 2.7, 실측: 2.65")을 result에 넣지 마세요
+- 여러 값을 조합하지 마세요 (예: "NG → PASS")
+
+result 값을 찾는 방법:
+- "종합 판정", "최종 결과", "판정 결과"와 같은 표현이 있는 줄에서 찾으세요
+- 개별 측정 항목의 판정이 아닌, 전체 검사의 최종 판정을 찾으세요
+- 판정값을 찾을 수 없으면 result를 null로 설정하세요 (추측하지 마세요)
+
+## 응답 형식 (JSON만)
+{
+  "fields": {
+    "wo_no": "...",
+    "line": "...",
+    "result": "PASS 또는 FAIL 또는 null"
+  },
+  "measurements": [
+    {"item": "...", "spec": "...", "measured": "...", "result": "..."}
+  ],
+  "missing_fields": ["inspector"],
+  "warnings": ["LOT 번호가 불명확함"],
+  "confidence": 0.95,
+  "suggested_template_id": null
+}

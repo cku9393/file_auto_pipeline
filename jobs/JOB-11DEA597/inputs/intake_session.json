@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "session_id": "09162cad-ca9f-4edd-b208-cba352c79030",
+  "created_at": "2025-12-11T03:22:02.097552+00:00",
+  "immutable": true,
+  "messages": [
+    {
+      "role": "user",
+      "content": "안녕\n",
+      "timestamp": "2025-12-11T03:22:02.135677+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "문서 생성에 필요한 정보를 입력해주세요 📋<br><br><b>필수 정보:</b><br>• WO 번호 (작업지시 번호)<br>• 라인 (L1, L2 등)<br>• 판정 결과 (PASS/FAIL)<br><br><b>선택 정보:</b><br>• 측정값, 비고, 사진 등<br><br>예: <i>WO-2024-001, L1라인, 합격, 측정값 3.5mm</i>",
+      "timestamp": "2025-12-11T03:22:02.153957+00:00",
+      "attachments": []
+    },
+    {
+      "role": "user",
+      "content": "작업지시번호: WO-2412-007\n라인: L2\n고객사: GS건설\n프로젝트: GS Tower 난간 보강\n\n검사일: 2024-12-11\n검사자: 김테스트\n\n도면번호: CBZ-R40798-002-01\n부품명: 난간 보강플레이트\n수량: 12 EA\n\n치수 측정 결과:\n- A (플레이트 길이) 설계 300.0 ±1.0 → 실측 299.8 / 299.7 / 299.9\n- B (볼트홀 간격) 설계 120.0 ±0.5 → 실측 120.7 / 120.8 / 120.6  → 허용범위 초과\n- C (두께) 설계 9.0 ±0.3 → 실측 8.9 / 9.0 / 8.9\n\n육안 검사:\n- 용접 비드 양호\n- 모서리 버어(burr) 일부 발생, 현장에서 디버링 처리 완료\n\n종합 판정(초기): FAIL\n엔지니어 판단: 구조 안전성에 영향 없음, 고객사와 협의 후 사용 가능할 것으로 판단\nOverride 요청 사유:\n- 코드: MEASUREMENT_OUT_OF_TOLERANCE\n- 상세: 볼트홀 간격이 +0.7mm 수준으로 설계 공차를 벗어났으나, 설치 후 장공 구조상 문제 없음. 시공 엔지니어, 품질팀 합의 완료.\n",
+      "timestamp": "2025-12-11T04:15:17.001340+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "분석 실패 ❌<br>오류가 발생했습니다: [EXTRACTION_FAILED] API 인증에 실패했습니다. MY_ANTHROPIC_KEY 환경변수를 확인해주세요.",
+      "timestamp": "2025-12-11T04:15:20.028613+00:00",
+      "attachments": []
+    }
+  ],
+  "ocr_results": {},
+  "extraction_result": null,
+  "user_corrections": [],
+  "photo_mappings": []
+}

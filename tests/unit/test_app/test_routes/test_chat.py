@@ -10,6 +10,7 @@ test_chat.py - Chat Routes 유닛 테스트
 
 import asyncio
 import json
+import threading
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -189,13 +190,17 @@ class TestSessionJobMapping:
         session_id = "persistent-session"
         job_id = "JOB-PERSIST"
 
-        # 첫 번째 저장
-        _save_session_mapping(jobs_root, session_id, job_id)
+        # 첫 번째 저장 - 새로 생성됨
+        returned_job_id = _save_session_mapping(jobs_root, session_id, job_id)
+        assert returned_job_id == job_id
 
-        # 두 번째 저장 시도 (이미 존재하면 무시)
-        _save_session_mapping(jobs_root, session_id, "JOB-DIFFERENT")
+        # 두 번째 저장 시도 (이미 존재하면 기존 값 반환)
+        returned_job_id_2 = _save_session_mapping(
+            jobs_root, session_id, "JOB-DIFFERENT"
+        )
+        assert returned_job_id_2 == job_id  # 원래 값 반환
 
-        # 원래 값 유지
+        # 디스크에서도 원래 값 유지
         loaded = _load_session_mapping(jobs_root, session_id)
         assert loaded == job_id
 
@@ -502,3 +507,84 @@ class TestSessionConsistency:
 
         # 다른 Job ID
         assert job_id_1 != job_id_2
+
+
+# =============================================================================
+# 7. 세션 매핑 TOCTOU-safe 테스트
+# =============================================================================
+
+
+class TestSessionMappingTOCTOUSafe:
+    """세션 매핑 TOCTOU-safe 테스트 (O_EXCL 패턴 검증)."""
+
+    def test_concurrent_session_mapping_same_job_id(self, jobs_root: Path):
+        """
+        동시 세션 매핑 시 동일한 job_id 반환 (TOCTOU-safe).
+
+        이전 구현의 문제점:
+            if session_file.exists():  # ← Time of Check
+                return
+            atomic_write_json(...)      # ← Time of Use (경합!)
+
+        수정 후:
+            O_EXCL로 원자적 생성 → 경합해도 동일 job_id 보장
+        """
+        # _sessions 디렉토리 미리 생성 (테스트 경합 방지)
+        _get_sessions_dir(jobs_root)
+
+        session_id = "race-session"
+        results: list[str] = []
+        results_lock = threading.Lock()
+        barrier = threading.Barrier(3)
+
+        def try_create_mapping(name: str, job_id: str):
+            barrier.wait()  # 동시 시작
+            returned_id = _save_session_mapping(jobs_root, session_id, job_id)
+            with results_lock:
+                results.append(returned_id)
+
+        threads = [
+            threading.Thread(target=try_create_mapping, args=(f"t{i}", f"JOB-{i}"))
+            for i in range(3)
+        ]
+
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        # 모든 스레드가 동일한 job_id를 반환해야 함
+        assert len(set(results)) == 1, f"경합 발생: 서로 다른 job_id 반환됨 {results}"
+
+        # 디스크의 값과 일치
+        loaded = _load_session_mapping(jobs_root, session_id)
+        assert loaded == results[0]
+
+    def test_save_returns_job_id(self, jobs_root: Path):
+        """_save_session_mapping이 실제 사용할 job_id를 반환."""
+        session_id = "return-test"
+
+        # 첫 번째: 새로 생성
+        job_id_1 = _save_session_mapping(jobs_root, session_id, "JOB-FIRST")
+        assert job_id_1 == "JOB-FIRST"
+
+        # 두 번째: 기존 값 반환
+        job_id_2 = _save_session_mapping(jobs_root, session_id, "JOB-SECOND")
+        assert job_id_2 == "JOB-FIRST"  # 기존 값
+
+    def test_file_content_matches_first_writer(self, jobs_root: Path):
+        """파일 내용이 첫 번째 성공한 쓰기와 일치."""
+        session_id = "content-test"
+
+        # 첫 번째 저장
+        _save_session_mapping(jobs_root, session_id, "JOB-WINNER")
+
+        # 두 번째 시도 (실패해야 함)
+        _save_session_mapping(jobs_root, session_id, "JOB-LOSER")
+
+        # 파일 내용 확인
+        session_file = _get_sessions_dir(jobs_root) / f"{session_id}.json"
+        data = json.loads(session_file.read_text())
+
+        assert data["job_id"] == "JOB-WINNER"
+        assert data["session_id"] == session_id

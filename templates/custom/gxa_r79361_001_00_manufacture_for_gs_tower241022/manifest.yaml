@@ -1,0 +1,11 @@
+doc_type: inspection
+docx_placeholders: []
+template_id: gxa_r79361_001_00_manufacture_for_gs_tower241022
+xlsx_mappings:
+  cell_addresses: {}
+  conflict_policy: fail
+  measurements:
+    columns: {}
+    sheet: Sheet1
+    start_row: 5
+  named_ranges: {}

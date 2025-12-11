@@ -17,6 +17,7 @@ import pytest
 
 from src.core.ssot_job import (
     atomic_write_json,
+    atomic_write_json_exclusive,
     ensure_job_json,
     job_lock,
     load_job_json,
@@ -703,3 +704,128 @@ class TestStaleLockMeta:
         assert len(warning_logs) >= 1
         assert "pid=999999999" in warning_logs[0]
         assert "host=test-host" in warning_logs[0]
+
+
+# =============================================================================
+# atomic_write_json_exclusive 테스트 (O_EXCL 패턴)
+# =============================================================================
+
+
+class TestAtomicWriteJsonExclusive:
+    """atomic_write_json_exclusive 함수 테스트 (TOCTOU-safe)."""
+
+    def test_creates_new_file_returns_true(self, tmp_path: Path):
+        """새 파일 생성 시 True 반환."""
+        file_path = tmp_path / "new.json"
+        data = {"key": "value", "number": 42}
+
+        result = atomic_write_json_exclusive(file_path, data)
+
+        assert result is True
+        assert file_path.exists()
+        loaded = json.loads(file_path.read_text(encoding="utf-8"))
+        assert loaded == data
+
+    def test_existing_file_returns_false(self, tmp_path: Path):
+        """기존 파일 존재 시 False 반환 및 덮어쓰지 않음."""
+        file_path = tmp_path / "existing.json"
+        original_data = {"original": "data"}
+        file_path.write_text(json.dumps(original_data))
+
+        new_data = {"new": "data"}
+        result = atomic_write_json_exclusive(file_path, new_data)
+
+        assert result is False
+        # 원본 데이터 유지됨
+        loaded = json.loads(file_path.read_text(encoding="utf-8"))
+        assert loaded == original_data
+
+    def test_creates_parent_directories(self, tmp_path: Path):
+        """부모 디렉터리 자동 생성."""
+        file_path = tmp_path / "nested" / "deep" / "dir" / "file.json"
+        data = {"nested": True}
+
+        result = atomic_write_json_exclusive(file_path, data)
+
+        assert result is True
+        assert file_path.exists()
+        assert file_path.parent.exists()
+
+    def test_unicode_content(self, tmp_path: Path):
+        """유니코드 내용 정상 처리."""
+        file_path = tmp_path / "unicode.json"
+        data = {"한글": "테스트", "emoji": "🎉", "japanese": "日本語"}
+
+        result = atomic_write_json_exclusive(file_path, data)
+
+        assert result is True
+        loaded = json.loads(file_path.read_text(encoding="utf-8"))
+        assert loaded == data
+
+    def test_concurrent_writes_only_one_wins(self, tmp_path: Path):
+        """동시 쓰기 시 하나만 성공 (TOCTOU-safe 검증)."""
+        file_path = tmp_path / "race.json"
+        results = []
+        barrier = threading.Barrier(2)
+
+        def try_write(name: str, data: dict):
+            barrier.wait()  # 동시 시작
+            result = atomic_write_json_exclusive(file_path, data)
+            results.append((name, result))
+
+        t1 = threading.Thread(
+            target=try_write, args=("t1", {"writer": "t1", "id": 1})
+        )
+        t2 = threading.Thread(
+            target=try_write, args=("t2", {"writer": "t2", "id": 2})
+        )
+
+        t1.start()
+        t2.start()
+        t1.join()
+        t2.join()
+
+        # 정확히 하나만 True (성공)
+        success_count = sum(1 for _, r in results if r is True)
+        failure_count = sum(1 for _, r in results if r is False)
+
+        assert success_count == 1
+        assert failure_count == 1
+
+        # 파일 내용 확인 - 승자의 데이터가 있어야 함
+        loaded = json.loads(file_path.read_text(encoding="utf-8"))
+        winner = next(name for name, r in results if r is True)
+        assert loaded["writer"] == winner
+
+    def test_write_failure_cleans_up(self, tmp_path: Path):
+        """쓰기 실패 시 불완전한 파일 정리."""
+        file_path = tmp_path / "fail.json"
+
+        # 직렬화 불가능한 객체
+        class NonSerializable:
+            pass
+
+        with pytest.raises(TypeError):
+            atomic_write_json_exclusive(file_path, {"bad": NonSerializable()})
+
+        # 불완전한 파일이 남아있지 않아야 함
+        assert not file_path.exists()
+
+    def test_fsync_failure_logs_warning(self, tmp_path: Path, caplog):
+        """fsync 실패 시 warning 로그."""
+        import logging
+
+        file_path = tmp_path / "fsync_warn.json"
+        data = {"key": "value"}
+
+        caplog.set_level(logging.WARNING, logger="src.core.ssot_job")
+
+        with patch("os.fsync") as mock_fsync:
+            mock_fsync.side_effect = OSError("I/O error")
+            result = atomic_write_json_exclusive(file_path, data)
+
+        assert result is True
+        # 파일은 정상 생성됨
+        assert file_path.exists()
+        # warning 로그 확인
+        assert any("fsync failed" in record.message for record in caplog.records)

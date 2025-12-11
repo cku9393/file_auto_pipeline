@@ -812,3 +812,148 @@ class TestForbiddenTokenDetection:
         for reason in legitimate:
             is_bad, _ = is_forbidden_reason(reason)
             assert is_bad is False, f"정상 사유 '{reason}'가 금지 토큰으로 인식됨"
+
+
+# =============================================================================
+# normalize_result_field 테스트
+# =============================================================================
+
+
+class TestNormalizeResultField:
+    """
+    normalize_result_field 함수 테스트.
+
+    LLM이 result 필드에 잘못된 값을 넣는 경우 정규화하는 함수.
+    핵심 엣지 케이스:
+    - 단어 경계 기반 토큰 추출 (RING, ENGINE 등에서 NG 오검출 방지)
+    - 한글 복합어 처리 (불합격입니다 → FAIL)
+    - 치수 설명 패턴 필터링
+    """
+
+    def test_valid_values_unchanged(self):
+        """정규 값은 변경하지 않음."""
+        from src.app.services.validate import normalize_result_field
+
+        valid_values = ["PASS", "FAIL", "OK", "NG", "합격", "불합격", "O", "X"]
+
+        for val in valid_values:
+            fields = {"result": val}
+            normalize_result_field(fields)
+            assert fields["result"] == val, f"'{val}'가 변경되면 안됨"
+
+    def test_long_sentence_with_pass(self):
+        """긴 문장에서 PASS 토큰 추출."""
+        from src.app.services.validate import normalize_result_field
+
+        test_cases = [
+            "이번 로트의 종합 판정은 PASS 입니다.",
+            "검사 결과: 모든 항목이 기준치 이내이므로 PASS로 판정합니다",
+            "최종 결과 PASS",
+        ]
+
+        for sentence in test_cases:
+            fields = {"result": sentence}
+            normalize_result_field(fields)
+            assert fields["result"] == "PASS", f"'{sentence}' → PASS 실패"
+
+    def test_long_sentence_with_fail(self):
+        """긴 문장에서 FAIL 토큰 추출."""
+        from src.app.services.validate import normalize_result_field
+
+        test_cases = [
+            "검사 결과 FAIL 입니다",
+            "종합 판정: 기준치 초과로 FAIL",
+            "최종 결과 NG 처리됨",
+        ]
+
+        for sentence in test_cases:
+            fields = {"result": sentence}
+            normalize_result_field(fields)
+            assert fields["result"] == "FAIL", f"'{sentence}' → FAIL 실패"
+
+    def test_ring_engine_no_false_positive(self):
+        """RING, ENGINE 등에서 NG 오검출 방지."""
+        from src.app.services.validate import normalize_result_field
+
+        test_cases = [
+            ("RING OK", "PASS"),  # RING에서 NG 추출 안됨
+            ("ENGINE PASS", "PASS"),  # ENGINE에서 NG 추출 안됨
+            ("RING-001 검사 PASS", "PASS"),
+            ("ENGINE 부품 검사 OK", "PASS"),
+        ]
+
+        for sentence, expected in test_cases:
+            fields = {"result": sentence}
+            normalize_result_field(fields)
+            assert fields["result"] == expected, f"'{sentence}' → '{expected}' 실패"
+
+    def test_korean_compound_words(self):
+        """한글 복합어 처리 (합격입니다, 불합격입니다)."""
+        from src.app.services.validate import normalize_result_field
+
+        test_cases = [
+            ("최종 판정 결과 합격입니다", "PASS"),
+            ("검사 결과: 불합격입니다", "FAIL"),
+            ("종합 판정 결과 합격으로 처리", "PASS"),
+            ("불합격 처리되었습니다", "FAIL"),
+        ]
+
+        for sentence, expected in test_cases:
+            fields = {"result": sentence}
+            normalize_result_field(fields)
+            assert fields["result"] == expected, f"'{sentence}' → '{expected}' 실패"
+
+    def test_dimension_description_becomes_none(self):
+        """치수 설명은 None으로 변환."""
+        from src.app.services.validate import normalize_result_field
+
+        test_cases = [
+            "설계: 2.7, 실측: 2.65",
+            "설계: 10mm, 실측: 9.8mm",
+            "규격 설계: 5.0 ± 0.5, 실측: 4.9",
+        ]
+
+        for sentence in test_cases:
+            fields = {"result": sentence}
+            normalize_result_field(fields)
+            assert fields["result"] is None, f"'{sentence}' → None 실패"
+
+    def test_empty_values(self):
+        """빈 값 처리."""
+        from src.app.services.validate import normalize_result_field
+
+        test_cases = [
+            ("", None),
+            ("   ", None),
+            (None, None),
+        ]
+
+        for val, expected in test_cases:
+            fields = {"result": val}
+            normalize_result_field(fields)
+            assert fields["result"] is expected, f"'{val}' → {expected} 실패"
+
+    def test_fail_priority_over_pass(self):
+        """PASS와 FAIL이 모두 있으면 FAIL 우선."""
+        from src.app.services.validate import normalize_result_field
+
+        fields = {"result": "처음 PASS였다가 재검사 후 FAIL"}
+        normalize_result_field(fields)
+        assert fields["result"] == "FAIL", "FAIL이 PASS보다 우선해야 함"
+
+    def test_very_long_string_becomes_none(self):
+        """80자 초과 문자열은 None."""
+        from src.app.services.validate import normalize_result_field
+
+        long_string = "이것은 매우 긴 문자열입니다. " * 10  # 80자 초과
+        fields = {"result": long_string}
+        normalize_result_field(fields)
+        assert fields["result"] is None, "80자 초과 시 None"
+
+    def test_no_result_key_unchanged(self):
+        """result 키가 없으면 아무것도 안함."""
+        from src.app.services.validate import normalize_result_field
+
+        fields = {"wo_no": "WO-001"}
+        normalize_result_field(fields)
+        assert "result" not in fields, "result 키가 없으면 추가 안함"

@@ -50,14 +50,31 @@ class ClaudeProvider(LLMProvider):
         """
         Args:
             model: 모델 ID (config에서 주입)
-            api_key: API 키 (환경변수 MY_ANTHROPIC_KEY 사용 가능)
+            api_key: API 키 (환경변수 MY_ANTHROPIC_KEY 또는 ANTHROPIC_API_KEY 사용 가능)
             max_tokens: 최대 토큰 수
             temperature: 샘플링 온도 (None이면 API 기본값)
             top_p: top-p 샘플링 (None이면 API 기본값)
             raw_storage_config: AI raw 데이터 저장 설정
+
+        Raises:
+            ExtractionError: API 키가 없을 때 (fail-fast)
         """
         self.model = model
-        self.api_key = api_key or os.environ.get("MY_ANTHROPIC_KEY")
+        # API 키 결정: 인자 > MY_ANTHROPIC_KEY > ANTHROPIC_API_KEY
+        self.api_key = (
+            api_key
+            or os.environ.get("MY_ANTHROPIC_KEY")
+            or os.environ.get("ANTHROPIC_API_KEY")
+        )
+
+        # Fail-fast: 키가 없으면 즉시 에러 (나중에 모호한 에러 방지)
+        if not self.api_key:
+            raise ExtractionError(
+                "ANTHROPIC_KEY_MISSING",
+                "Anthropic API 키가 없습니다. "
+                "MY_ANTHROPIC_KEY 또는 ANTHROPIC_API_KEY 환경변수를 설정하세요.",
+            )
+
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.top_p = top_p

@@ -19,9 +19,15 @@ from typing import Any
 
 from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.templating import Jinja2Templates
 
 from src.app.services.intake import IntakeService
-from src.core.ssot_job import atomic_write_json
+from src.core.ssot_job import atomic_write_json_exclusive
+from src.templates.manager import TemplateManager
+
+# Jinja2 템플릿 설정
+_templates_dir = Path(__file__).parent.parent / "templates"
+jinja_templates = Jinja2Templates(directory=_templates_dir) if _templates_dir.exists() else None
 
 # Routers
 router = APIRouter()  # HTML pages
@@ -63,17 +69,31 @@ def _load_session_mapping(jobs_root: Path, session_id: str) -> str | None:
     return None
 
 
-def _save_session_mapping(jobs_root: Path, session_id: str, job_id: str) -> None:
+def _save_session_mapping(jobs_root: Path, session_id: str, job_id: str) -> str:
     """
-    세션-잡 매핑을 디스크에 원자적으로 저장.
+    세션-잡 매핑을 디스크에 원자적으로 저장 (TOCTOU-safe).
 
-    경합 시 "이미 존재하면 그걸 사용" 정책.
+    O_EXCL 패턴으로 경합 윈도우를 제거:
+    - 파일이 없으면: 새로 생성하고 job_id 반환
+    - 파일이 있으면: 기존 job_id를 읽어서 반환 (덮어쓰지 않음)
+
+    이전 구현의 TOCTOU 취약점:
+        if session_file.exists():  # ← Time of Check
+            return
+        atomic_write_json(...)      # ← Time of Use (경합 윈도우!)
+
+    현재 구현:
+        O_CREAT | O_EXCL로 원자적 "존재 확인 + 생성"
+
+    Args:
+        jobs_root: jobs 루트 디렉토리
+        session_id: 세션 ID
+        job_id: 새로 생성할 Job ID (이미 존재하면 무시됨)
+
+    Returns:
+        실제 사용할 job_id (새로 생성됐거나 기존 값)
     """
     session_file = _get_sessions_dir(jobs_root) / f"{session_id}.json"
-
-    # 이미 존재하면 기존 것 사용 (경합 방지)
-    if session_file.exists():
-        return
 
     now = datetime.now(UTC).isoformat()
     data = {
@@ -82,7 +102,18 @@ def _save_session_mapping(jobs_root: Path, session_id: str, job_id: str) -> None
         "created_at": now,
         "updated_at": now,
     }
-    atomic_write_json(session_file, data)
+
+    # O_EXCL: 원자적으로 "존재 확인 + 생성"
+    if atomic_write_json_exclusive(session_file, data):
+        # 새로 생성됨 → 전달받은 job_id 사용
+        return job_id
+    else:
+        # 이미 존재 → 기존 job_id 읽어서 반환
+        existing_job_id = _load_session_mapping(jobs_root, session_id)
+        if existing_job_id:
+            return existing_job_id
+        # 매우 드문 경우: 파일 존재하지만 읽기 실패 → 전달받은 job_id 사용
+        return job_id
 
 
 def get_or_create_intake(request: Request, session_id: str) -> IntakeService:
@@ -91,6 +122,8 @@ def get_or_create_intake(request: Request, session_id: str) -> IntakeService:
 
     새 세션이면 job 폴더 생성, 기존이면 로드.
     디스크가 source of truth, 메모리는 캐시.
+
+    TOCTOU-safe: O_EXCL 패턴으로 경합 시에도 동일 job_id 보장.
     """
     jobs_root: Path = request.app.state.jobs_root
 
@@ -102,9 +135,11 @@ def get_or_create_intake(request: Request, session_id: str) -> IntakeService:
         job_id = _load_session_mapping(jobs_root, session_id)
 
         if job_id is None:
-            # 3. 새 Job ID 생성
-            job_id = f"JOB-{uuid.uuid4().hex[:8].upper()}"
-            _save_session_mapping(jobs_root, session_id, job_id)
+            # 3. 새 Job ID 생성 시도 (TOCTOU-safe)
+            candidate_job_id = f"JOB-{uuid.uuid4().hex[:8].upper()}"
+            # _save_session_mapping이 실제 사용할 job_id를 반환
+            # (경합 시 기존 job_id, 아니면 candidate_job_id)
+            job_id = _save_session_mapping(jobs_root, session_id, candidate_job_id)
 
         # 캐시 업데이트
         _session_to_job[session_id] = job_id
@@ -178,10 +213,25 @@ async def chat_page(request: Request) -> HTMLResponse:
     """
     채팅 화면.
 
-    TODO: Jinja2 템플릿으로 렌더링
+    Jinja2 템플릿으로 렌더링.
+    템플릿 목록은 HTMX로 동적 로딩 (/api/chat/templates/options).
     """
+    # 세션 ID 생성 (새 세션)
+    session_id = str(uuid.uuid4())
+
+    # Jinja2 템플릿 사용
+    if jinja_templates:
+        return jinja_templates.TemplateResponse(
+            "chat.html",
+            {
+                "request": request,
+                "session_id": session_id,
+            },
+        )
+
+    # Fallback: Jinja2 템플릿이 없는 경우 기본 HTML
     return HTMLResponse(
-        content="""
+        content=f"""
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -189,44 +239,26 @@ async def chat_page(request: Request) -> HTMLResponse:
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>문서 생성 - 채팅</title>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <script src="https://unpkg.com/htmx.org/dist/ext/sse.js"></script>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
     <div class="chat-container">
         <header>
             <h1>📄 문서 생성</h1>
-            <select id="template-select">
-                <option value="base">기본 템플릿</option>
+            <select id="template-select"
+                    hx-get="/api/chat/templates/options"
+                    hx-trigger="load"
+                    hx-swap="innerHTML">
+                <option value="base">로딩 중...</option>
             </select>
         </header>
-
         <div id="chat-messages" class="messages">
             <div class="message assistant">
-                안녕하세요! 문서 생성을 도와드릴게요.<br>
-                작업 정보를 자유롭게 입력해주세요.<br>
-                (엑셀, 사진, PDF 등 파일도 첨부 가능합니다)
+                안녕하세요! 문서 생성을 도와드릴게요.
             </div>
         </div>
-
-        <form id="chat-form"
-              hx-post="/api/chat/message"
-              hx-target="#chat-messages"
-              hx-swap="beforeend"
-              hx-trigger="submit">
-            <input type="hidden" name="session_id" id="session-id" value="">
-            <div class="input-area">
-                <textarea name="content"
-                          placeholder="메시지 입력..."
-                          rows="2"></textarea>
-                <input type="file" id="file-input" multiple hidden>
-                <button type="button" onclick="document.getElementById('file-input').click()">📎</button>
-                <button type="submit">전송</button>
-            </div>
-            <div id="file-list" class="file-list"></div>
-        </form>
+        <input type="hidden" id="session-id" name="session_id" value="{session_id}">
     </div>
-
     <script src="/static/js/app.js"></script>
 </body>
 </html>
@@ -275,7 +307,7 @@ async def chat_stream(
 @api_router.post("/message")
 async def send_message(
     request: Request,
-    content: str = Form(...),
+    content: str | None = Form(None),
     session_id: str | None = Form(None),
 ) -> HTMLResponse:
     """
@@ -290,6 +322,17 @@ async def send_message(
     # 1) 세션 ID 생성/유지
     if not session_id:
         session_id = str(uuid.uuid4())
+
+    # 빈 content 방어: 422 대신 친절한 메시지 반환
+    if not content or not content.strip():
+        oob_session = build_oob_session_input(session_id)
+        return HTMLResponse(
+            content=(
+                '<div class="message assistant">'
+                "메시지를 입력해주세요. 📝"
+                "</div>" + oob_session
+            )
+        )
 
     # IntakeService 연동
     intake = get_or_create_intake(request, session_id)
@@ -315,6 +358,29 @@ async def send_message(
             for r in session.ocr_results.values()
             if r.success and r.text
         ]
+        has_ocr = bool(ocr_texts)
+
+        # 입력이 너무 빈약하면 LLM 호출 없이 안내 메시지 반환
+        # (비용 절약 + 불필요한 에러 방지)
+        total_input_length = len(user_input) + sum(len(t) for t in ocr_texts)
+        if total_input_length < 20 and not has_ocr:
+            assistant_response = (
+                "문서 생성에 필요한 정보를 입력해주세요 📋<br><br>"
+                "<b>필수 정보:</b><br>"
+                "• WO 번호 (작업지시 번호)<br>"
+                "• 라인 (L1, L2 등)<br>"
+                "• 판정 결과 (PASS/FAIL)<br><br>"
+                "<b>선택 정보:</b><br>"
+                "• 측정값, 비고, 사진 등<br><br>"
+                "예: <i>WO-2024-001, L1라인, 합격, 측정값 3.5mm</i>"
+            )
+            intake.add_message(role="assistant", content=assistant_response)
+            user_html = build_user_message_html(content)
+            assistant_html = build_assistant_message_html(assistant_response, job_id)
+            oob_session = build_oob_session_input(session_id)
+            return HTMLResponse(content=user_html + assistant_html + oob_session)
+
+        # OCR 텍스트 결합
         ocr_text = "\n".join(ocr_texts) if ocr_texts else None
 
         # 서비스 초기화
@@ -355,6 +421,11 @@ async def send_message(
             return HTMLResponse(content=user_html + assistant_html + oob_session)
 
         intake.add_extraction_result(extraction_result)
+
+        # result 필드 노멀라이저 적용 (LLM이 긴 문장 넣은 경우 전처리)
+        from src.app.services.validate import normalize_result_field
+
+        normalize_result_field(extraction_result.fields)
 
         # 검증 실행
         validation_service = ValidationService(definition_path)
@@ -465,6 +536,7 @@ async def upload_file(
     file_ext = Path(filename).suffix.lower()
     photo_extensions = {".jpg", ".jpeg", ".png"}
     ocr_extensions = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf"}
+    template_extensions = {".docx", ".dotx", ".odt"}  # 템플릿 후보 파일
 
     slot_key: str | None = None
     raw_path: str | None = None
@@ -569,6 +641,31 @@ async def upload_file(
             f'<small class="job-info">{complete_msg}</small></div>'
         )
 
+    # 템플릿 후보 파일(.docx 등)이면 "템플릿으로 등록" 버튼 노출
+    can_register_as_template = file_ext in template_extensions
+    suggested_template_id: str | None = None
+    suggested_display_name: str | None = None
+
+    if can_register_as_template:
+        # 파일명에서 템플릿 ID 후보 생성 (확장자 제거, 소문자화, 특수문자→언더스코어)
+        import re
+        stem = Path(filename).stem
+        suggested_template_id = re.sub(r"[^a-z0-9]+", "_", stem.lower()).strip("_")
+        suggested_display_name = stem
+
+        # 템플릿 등록 버튼 HTML (HTMX로 모달 열기)
+        template_btn_html = f'''
+        <div class="message assistant template-register-prompt">
+            <p>📝 이 파일을 템플릿으로 등록할 수 있습니다.</p>
+            <button type="button"
+                    class="btn btn-primary"
+                    onclick="openTemplateRegisterModal('{escape_html(session_id)}', '{safe_filename}', '{escape_html(suggested_template_id)}', '{escape_html(suggested_display_name)}')">
+                📋 템플릿으로 등록
+            </button>
+        </div>
+        '''
+        html_parts.append(template_btn_html)
+
     # 전체 HTML 조립
     messages_html = "\n".join(html_parts)
 
@@ -589,6 +686,10 @@ async def upload_file(
             else (ocr_result.text if ocr_result else None)
         ),
         "messages_html": messages_html,
+        # 템플릿 등록 가능 여부
+        "can_register_as_template": can_register_as_template,
+        "suggested_template_id": suggested_template_id if can_register_as_template else None,
+        "suggested_display_name": suggested_display_name if can_register_as_template else None,
     }
 
 
@@ -643,6 +744,11 @@ async def extract_fields(
 
         # 추출 결과 저장
         intake.add_extraction_result(extraction_result)
+
+        # result 필드 노멀라이저 적용
+        from src.app.services.validate import normalize_result_field
+
+        normalize_result_field(extraction_result.fields)
 
         # ValidationService 실행
         validation_service = ValidationService(definition_path)
@@ -703,3 +809,31 @@ async def apply_override(
         "reason": reason,
         "message": f"'{field}' 필드가 생략되었습니다.",
     }
+
+
+@api_router.get("/templates/options", response_class=HTMLResponse)
+async def get_template_options(request: Request) -> HTMLResponse:
+    """
+    템플릿 목록을 <option> HTML로 반환.
+
+    HTMX hx-trigger="load"로 동적 로딩하여 사용.
+    """
+    from src.templates.manager import TemplateStatus
+
+    templates_root: Path = request.app.state.templates_root
+    template_manager = TemplateManager(templates_root)
+
+    # READY 상태 템플릿만 조회 (draft, archived 제외)
+    template_list = template_manager.list_templates(
+        category="all",
+        status=TemplateStatus.READY,
+    )
+
+    # <option> HTML 생성
+    options = ['<option value="base">기본 템플릿</option>']
+    for tmpl in template_list:
+        tid = escape_html(tmpl.template_id)
+        name = escape_html(tmpl.display_name)
+        options.append(f'<option value="{tid}">{name}</option>')
+
+    return HTMLResponse(content="\n".join(options))

@@ -323,6 +323,10 @@ def atomic_write_json(path: Path, data: dict) -> None:
     - 실패 시 cleanup: temp 파일 삭제
     - 기존 파일 보존: rename 실패 시 원본 유지
 
+    Note:
+        이 함수는 기존 파일을 덮어씁니다.
+        경합 방지가 필요하면 atomic_write_json_exclusive()를 사용하세요.
+
     Args:
         path: 저장할 파일 경로
         data: JSON 직렬화할 데이터
@@ -363,6 +367,75 @@ def atomic_write_json(path: Path, data: dict) -> None:
             except OSError:
                 pass
         raise
+
+
+def atomic_write_json_exclusive(path: Path, data: dict) -> bool:
+    """
+    TOCTOU-safe 원자적 JSON 쓰기 (O_EXCL 패턴).
+
+    "파일이 없으면 생성, 있으면 실패" 시맨틱을 원자적으로 구현.
+    exists() 체크 없이 O_CREAT | O_EXCL로 경합 윈도우를 제거함.
+
+    동작:
+    1. O_CREAT | O_EXCL로 파일 생성 시도 (원자적)
+    2. 성공 시: 데이터 쓰기 + fsync
+    3. FileExistsError 시: False 반환 (기존 파일 유지)
+
+    사용 예시:
+        if not atomic_write_json_exclusive(path, data):
+            # 이미 존재 → 기존 값 사용
+            existing = json.loads(path.read_text())
+
+    Args:
+        path: 저장할 파일 경로
+        data: JSON 직렬화할 데이터
+
+    Returns:
+        True: 새로 생성됨
+        False: 이미 존재함 (덮어쓰지 않음)
+
+    Raises:
+        OSError: 파일 시스템 오류 (권한, 디스크 풀 등)
+    """
+    dir_path = path.parent
+    dir_path.mkdir(parents=True, exist_ok=True)
+
+    try:
+        # O_CREAT | O_EXCL: 파일이 없으면 생성, 있으면 FileExistsError
+        # O_WRONLY: 쓰기 전용
+        fd = os.open(str(path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+    except FileExistsError:
+        # 파일 이미 존재 → 경합에서 다른 프로세스가 이김
+        return False
+
+    try:
+        # 데이터 쓰기
+        content = json.dumps(data, indent=2, ensure_ascii=False).encode("utf-8")
+        os.write(fd, content)
+
+        # fsync (내구성)
+        try:
+            os.fsync(fd)
+        except OSError as e:
+            logger.warning(
+                f"File fsync failed for {path}: {e}. "
+                f"Data may not be durable on power loss."
+            )
+    except Exception:
+        # 쓰기 실패 시 파일 삭제 (불완전한 파일 남기지 않음)
+        os.close(fd)
+        try:
+            path.unlink()
+        except OSError:
+            pass
+        raise
+    else:
+        os.close(fd)
+
+    # 디렉토리 fsync
+    _fsync_dir(dir_path)
+
+    return True
 
 
 # =============================================================================

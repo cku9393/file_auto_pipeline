@@ -709,6 +709,49 @@ textarea {
     justify-content: flex-end;
 }
 
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-3);
+    margin-top: var(--space-6);
+}
+
+/* Alerts */
+.alert {
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+    margin-top: var(--space-4);
+}
+
+.alert-success {
+    background: var(--success-50);
+    color: var(--success-700);
+}
+
+.alert-error {
+    background: var(--error-50);
+    color: var(--error-700);
+}
+
+/* Template register prompt */
+.template-register-prompt {
+    border-left: 3px solid var(--primary-500);
+}
+
+.template-register-prompt p {
+    margin-bottom: var(--space-3);
+}
+
 /* =============================================================================
    Dashboard
    ============================================================================= */

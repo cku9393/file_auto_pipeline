@@ -24,6 +24,123 @@ from src.domain.errors import ErrorCodes, PolicyRejectError
 from src.domain.schemas import OverrideLog, OverrideReasonCode
 
 # =============================================================================
+# Result Field 노멀라이저 (LLM 출력 전처리)
+# =============================================================================
+
+# 유효한 result 값 (정규화 전 매칭용)
+VALID_RESULT_VALUES = frozenset(
+    {
+        "PASS",
+        "OK",
+        "합격",
+        "O",
+        "FAIL",
+        "NG",
+        "불합격",
+        "X",
+    }
+)
+
+# 토큰 추출용 패턴 (단어 경계로 분리)
+# RING, ENGINE 같은 서브스트링 오검출 방지
+FAIL_TOKENS = frozenset({"FAIL", "NG", "불합격", "X"})
+PASS_TOKENS = frozenset({"PASS", "OK", "합격", "O"})
+
+
+def _extract_tokens(s: str) -> set[str]:
+    """
+    문자열에서 토큰 추출 (단어 경계 기준).
+
+    "RING OK" → {"RING", "OK"}
+    "판정: NG" → {"판정", "NG"}
+    "불합격입니다" → contains "불합격"
+    """
+    tokens = set()
+
+    # 영문 토큰 (단어 경계 기준)
+    english_tokens = re.findall(r"[A-Z]+", s.upper())
+    tokens.update(english_tokens)
+
+    # 한글 토큰 (공백/기호로 분리)
+    korean_tokens = re.split(r"[^가-힣]+", s)
+    tokens.update(t for t in korean_tokens if t)
+
+    return tokens
+
+
+def _contains_korean_token(s: str, keywords: frozenset[str]) -> bool:
+    """
+    문자열에 한글 키워드가 포함되어 있는지 확인.
+
+    "불합격입니다" → "불합격" 포함 → True
+    """
+    for keyword in keywords:
+        if keyword in s:
+            return True
+    return False
+
+
+def normalize_result_field(fields: dict[str, Any]) -> None:
+    """
+    LLM이 result 필드에 넣은 값을 전처리.
+
+    순서:
+    1) 정규 값 체크 (PASS, FAIL, OK, NG 등) → 그대로
+    2) 치수 설명 체크 ("설계" + "실측") → None
+    3) 토큰 추출 (단어 경계 기준, 길이 80자 이하)
+       - FAIL/NG/불합격 발견 → FAIL
+       - PASS/OK/합격 발견 → PASS
+    4) 너무 긴 문장 (80자 초과, 토큰도 없음) → None
+    5) 기타 → None
+
+    Args:
+        fields: 추출된 필드 dict (in-place 수정)
+    """
+    raw = fields.get("result")
+    if raw is None:
+        return
+
+    s = str(raw).strip()
+    if not s:
+        fields["result"] = None
+        return
+
+    # 1) 이미 정규 값이면 그대로 둔다
+    normalized = s.upper().strip()
+    if s in VALID_RESULT_VALUES or normalized in VALID_RESULT_VALUES:
+        return
+
+    # 2) 치수 설명 같은 줄은 "결과가 아닌 것"으로 본다
+    #    예: "설계: 2.7, 실측: 2.65, 판정: NG → PASS"
+    if "설계" in s and "실측" in s:
+        fields["result"] = None
+        return
+
+    # 3) 토큰 추출 (길이 80자 이하인 경우만)
+    #    "이번 로트의 종합 판정은 PASS 입니다" 같은 문장 처리
+    if len(s) <= 80:
+        tokens = _extract_tokens(s)
+
+        # FAIL 계열 먼저 체크 (FAIL이 PASS보다 우선)
+        # 영문 토큰 또는 한글 키워드 포함 체크
+        korean_fail = {"불합격"}
+        korean_pass = {"합격"}
+
+        if (tokens & FAIL_TOKENS) or _contains_korean_token(s, korean_fail):
+            fields["result"] = "FAIL"
+            return
+
+        # PASS 계열 체크
+        if (tokens & PASS_TOKENS) or _contains_korean_token(s, korean_pass):
+            fields["result"] = "PASS"
+            return
+
+    # 4) 너무 긴 문장이고 토큰도 없음 → None
+    # 5) 그 외 애매한 건 일단 None 처리
+    fields["result"] = None
+
+
+# =============================================================================
 # Override Reason 검증 상수
 # =============================================================================
 
@@ -419,12 +536,27 @@ class ValidationService:
 
         return value_str
 
-    def _normalize_result(self, value: str) -> str:
+    def _normalize_result(self, value: Any) -> str | None:
         """
         result 필드 정규화.
 
         definition.yaml의 result_pass_aliases, result_fail_aliases 기반.
+
+        Args:
+            value: result 값 (None, "", 또는 문자열)
+
+        Returns:
+            "PASS", "FAIL", 또는 None (누락 시)
+
+        Raises:
+            PolicyRejectError: 유효하지 않은 값 (None/빈값이 아닌데 매칭 안 될 때)
         """
+        # None 또는 빈 값은 "missing"으로 처리 (invalid가 아님)
+        if value is None:
+            return None
+        if isinstance(value, str) and not value.strip():
+            return None
+
         validation = self.definition.get("validation", {})
         pass_aliases = validation.get(
             "result_pass_aliases", ["PASS", "OK", "합격", "O"]

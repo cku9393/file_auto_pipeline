@@ -20,7 +20,8 @@
       "Bash(uv run python:*)",
       "Bash(uv run pytest:*)",
       "Bash(find:*)",
-      "Bash(uv add:*)"
+      "Bash(uv add:*)",
+      "Bash(pkill:*)"
     ]
   },
   "outputStyle": "Explanatory"

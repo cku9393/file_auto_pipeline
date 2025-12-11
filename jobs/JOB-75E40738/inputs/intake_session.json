@@ -1,0 +1,217 @@
+{
+  "schema_version": "1.0",
+  "session_id": "e899d46e-5fd0-4e2c-a946-be0a3e327e85",
+  "created_at": "2025-12-11T00:22:40.988355+00:00",
+  "immutable": true,
+  "messages": [
+    {
+      "role": "user",
+      "content": "안녕\n",
+      "timestamp": "2025-12-11T00:22:41.027311+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "분석 실패 ❌<br>오류가 발생했습니다: [EXTRACTION_FAILED] API 키 설정을 확인해주세요.",
+      "timestamp": "2025-12-11T00:22:42.085418+00:00",
+      "attachments": []
+    },
+    {
+      "role": "user",
+      "content": "hi",
+      "timestamp": "2025-12-11T00:53:10.216519+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "분석 실패 ❌<br>오류가 발생했습니다: [EXTRACTION_FAILED] API 키 설정을 확인해주세요.",
+      "timestamp": "2025-12-11T00:53:12.721008+00:00",
+      "attachments": []
+    },
+    {
+      "role": "user",
+      "content": "hi",
+      "timestamp": "2025-12-11T01:02:33.123671+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "분석 실패 ❌<br>오류가 발생했습니다: [EXTRACTION_FAILED] API 키 설정을 확인해주세요.",
+      "timestamp": "2025-12-11T01:02:34.526843+00:00",
+      "attachments": []
+    },
+    {
+      "role": "user",
+      "content": "hi\n",
+      "timestamp": "2025-12-11T01:33:39.060043+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "분석 실패 ❌<br>오류가 발생했습니다: [EXTRACTION_FAILED] API 키 설정을 확인해주세요.",
+      "timestamp": "2025-12-11T01:33:40.396094+00:00",
+      "attachments": []
+    },
+    {
+      "role": "user",
+      "content": "안녕",
+      "timestamp": "2025-12-11T01:47:39.814871+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "분석 실패 ❌<br>오류가 발생했습니다: [RESULT_INVALID_VALUE] value=None, valid_values=[&#x27;PASS&#x27;, &#x27;OK&#x27;, &#x27;합격&#x27;, &#x27;O&#x27;, &#x27;FAIL&#x27;, &#x27;NG&#x27;, &#x27;불합격&#x27;, &#x27;X&#x27;]",
+      "timestamp": "2025-12-11T01:47:49.433748+00:00",
+      "attachments": []
+    },
+    {
+      "role": "user",
+      "content": "[파일 첨부: CBZ-R40798-001-00_Design for GS Tower241022_번역 (복구됨).docx]",
+      "timestamp": "2025-12-11T01:52:18.102627+00:00",
+      "attachments": [
+        {
+          "filename": "CBZ-R40798-001-00_Design for GS Tower241022_번역 (복구됨).docx",
+          "size": 158010,
+          "path": "inputs/uploads/CBZ-R40798-001-00_Design for GS Tower241022_번역 (복구됨).docx"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "[파일 첨부: CBZ-R40798-001-00_Design for GS Tower241022_번역.odt]",
+      "timestamp": "2025-12-11T01:52:18.267014+00:00",
+      "attachments": [
+        {
+          "filename": "CBZ-R40798-001-00_Design for GS Tower241022_번역.odt",
+          "size": 66244,
+          "path": "inputs/uploads/CBZ-R40798-001-00_Design for GS Tower241022_번역.odt"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "[파일 첨부: CBZ-R40799-001-00_Design for LOC MAST&BASE241022_번역.odt]",
+      "timestamp": "2025-12-11T01:52:18.393563+00:00",
+      "attachments": [
+        {
+          "filename": "CBZ-R40799-001-00_Design for LOC MAST&BASE241022_번역.odt",
+          "size": 61452,
+          "path": "inputs/uploads/CBZ-R40799-001-00_Design for LOC MAST&BASE241022_번역.odt"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "[파일 첨부: GXA-R79361-001-00_manufacture for GS Tower241022_번역.odt]",
+      "timestamp": "2025-12-11T01:52:18.649100+00:00",
+      "attachments": [
+        {
+          "filename": "GXA-R79361-001-00_manufacture for GS Tower241022_번역.odt",
+          "size": 828275,
+          "path": "inputs/uploads/GXA-R79361-001-00_manufacture for GS Tower241022_번역.odt"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "안녕\n",
+      "timestamp": "2025-12-11T02:19:40.142239+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "분석 실패 ❌<br>API 인증 문제가 발생했습니다.<br>관리자에게 문의해주세요.",
+      "timestamp": "2025-12-11T02:19:40.162590+00:00",
+      "attachments": []
+    },
+    {
+      "role": "user",
+      "content": "안녕",
+      "timestamp": "2025-12-11T02:20:55.610140+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "분석 실패 ❌<br>오류가 발생했습니다: [INTAKE_IMMUTABLE_VIOLATION] error=&#x27;extraction_result already exists. Cannot overwrite.&#x27;",
+      "timestamp": "2025-12-11T02:21:02.910837+00:00",
+      "attachments": []
+    },
+    {
+      "role": "user",
+      "content": "[파일 첨부: GXA-R79361-001-00_manufacture for GS Tower241022_번역.odt]",
+      "timestamp": "2025-12-11T02:28:54.374113+00:00",
+      "attachments": [
+        {
+          "filename": "GXA-R79361-001-00_manufacture for GS Tower241022_번역.odt",
+          "size": 828275,
+          "path": "inputs/uploads/GXA-R79361-001-00_manufacture for GS Tower241022_번역_1.odt"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "왜 템플릿이 하나인 것이지?\n",
+      "timestamp": "2025-12-11T02:29:32.431457+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "분석 실패 ❌<br>API 인증 문제가 발생했습니다.<br>관리자에게 문의해주세요.",
+      "timestamp": "2025-12-11T02:29:32.451026+00:00",
+      "attachments": []
+    }
+  ],
+  "ocr_results": {},
+  "extraction_result": {
+    "success": true,
+    "fields": {
+      "wo_no": null,
+      "line": null,
+      "part_no": null,
+      "lot": null,
+      "result": null,
+      "inspector": null,
+      "date": null,
+      "remark": null
+    },
+    "measurements": [],
+    "missing_fields": [
+      "wo_no",
+      "line",
+      "part_no",
+      "lot",
+      "result",
+      "inspector",
+      "date"
+    ],
+    "warnings": [
+      "제조 검사 문서가 아닌 일반 인사말 텍스트입니다",
+      "추출 가능한 필드 정보가 없습니다",
+      "OCR 데이터도 제공되지 않았습니다"
+    ],
+    "confidence": 0.0,
+    "model_requested": "claude-opus-4-5-20251101",
+    "model_used": "claude-opus-4-5-20251101",
+    "extracted_at": "2025-12-11T01:47:39.901046+00:00",
+    "provider": "anthropic",
+    "model_params": {
+      "max_tokens": 4096
+    },
+    "request_id": "msg_01QHNZBNTLsauUhZdCKVcchs",
+    "llm_raw_output": "```json\n{\n  \"fields\": {\n    \"wo_no\": null,\n    \"line\": null,\n    \"part_no\": null,\n    \"lot\": null,\n    \"result\": null,\n    \"inspector\": null,\n    \"date\": null,\n    \"remark\": null\n  },\n  \"measurements\": [],\n  \"missing_fields\": [\n    \"wo_no\",\n    \"line\",\n    \"part_no\",\n    \"lot\",\n    \"result\",\n    \"inspector\",\n    \"date\"\n  ],\n  \"warnings\": [\n    \"제조 검사 문서가 아닌 일반 인사말 텍스트입니다\",\n    \"추출 가능한 필드 정보가 없습니다\",\n    \"OCR 데이터도 제공되지 않았습니다\"\n  ],\n  \"confidence\": 0.0,\n  \"suggested_template_id\": null\n}\n```",
+    "llm_raw_output_hash": "sha256:aa7e490c7aaf53d0",
+    "llm_raw_truncated": false,
+    "prompt_template_id": "default",
+    "prompt_template_version": "1.0.0",
+    "prompt_user_variables": {
+      "user_input": "안녕\n\nhi\nhi\nhi\n\n안녕",
+      "ocr_text": ""
+    },
+    "prompt_rendered": "당신은 제조 검사 문서에서 정보를 추출하는 전문가입니다.\n\n## 입력 계약 (definition.yaml 기준)\n- wo_no: type=token, importance=critical, aliases=['WO No', 'WO No.', 'Work Order', '작업지시번호', 'W/O']\n- line: type=token, importance=critical, aliases=['Line', 'Line No', '라인', '라인번호']\n- part_no: type=token, importance=critical, aliases=['Part No', 'Part No.', 'Part Number', '부품번호', 'P/N']\n- lot: type=token, importance=critical, aliases=['Lot', 'Lot No', 'Lot No.', '로트', '로트번호']\n- result: type=token, importance=critical, aliases=['Result', '결과', '판정', 'Final Result']\n- inspector: type=token, importance=reference, aliases=['Inspector', '검사자', 'Inspected By', '담당자']\n- date: type=token, importance=reference, aliases=['Date', '검사일', '일자', 'Inspection Date']\n- remark: type=free_text, importance=reference, aliases=['Remark', 'Remarks', '비고', 'Notes', 'Comment']\n\n## 사용자 입력\n안녕\n\nhi\nhi\nhi\n\n안녕\n\n## OCR 추출 텍스트 (있는 경우)\n(없음)\n\n## 지시사항\n1. 위 입력에서 필드를 추출하세요\n2. 측정 데이터가 있다면 표 형식으로 추출하세요\n3. 누락된 필수 필드가 있으면 missing_fields에 명시하세요\n\n## 응답 형식 (JSON만)\n{\n  \"fields\": {\n    \"wo_no\": \"...\",\n    \"line\": \"...\",\n    ...\n  },\n  \"measurements\": [\n    {\"item\": \"...\", \"spec\": \"...\", \"measured\": \"...\", \"result\": \"...\"}\n  ],\n  \"missing_fields\": [\"inspector\"],\n  \"warnings\": [\"LOT 번호가 불명확함\"],\n  \"confidence\": 0.95,\n  \"suggested_template_id\": null\n}",
+    "prompt_hash": "sha256:bdf69df1ca4c2006",
+    "prompt_used": "당신은 제조 검사 문서에서 정보를 추출하는 전문가입니다.\n\n## 입력 계약 (definition.yaml 기준)\n- wo_no: type=token, importance=critical, aliases=['WO No', 'WO No.', 'Work Order', '작업지시번호', 'W/O']\n- line: type=token, importance=critical, aliases=['Line', 'Line No', '라인', '라인번호']\n- part_no: type=token, importance=critical, aliases=['Part No', 'Part No.', 'Part Number', '부품번호', 'P/N']\n- lot: type=token, importance=critical, aliases=['Lot', 'Lot No', 'Lot No.', '로트', '로트번호']\n- result: type=token, importance=critical, aliases=['Result', '결과', '판정', 'Final Result']\n- inspector: type=token, importance=reference, aliases=['Inspector', '검사자', 'Inspected By', '담당자']\n- date: type=token, importance=reference, aliases=['Date', '검사일', '일자', 'Inspection Date']\n- remark: type=free_text, importance=reference, aliases=['Remark', 'Remarks', '비고', 'Notes', 'Comment']\n\n## 사용자 입력\n안녕\n\nhi\nhi\nhi\n\n안녕\n\n## OCR 추출 텍스트 (있는 경우)\n(없음)\n\n## 지시사항\n1. 위 입력에서 필드를 추출하세요\n2. 측정 데이터가 있다면 표 형식으로 추출하세요\n3. 누락된 필수 필드가 있으면 missing_fields에 명시하세요\n\n## 응답 형식 (JSON만)\n{\n  \"fields\": {\n    \"wo_no\": \"...\",\n    \"line\": \"...\",\n    ...\n  },\n  \"measurements\": [\n    {\"item\": \"...\", \"spec\": \"...\", \"measured\": \"...\", \"result\": \"...\"}\n  ],\n  \"missing_fields\": [\"inspector\"],\n  \"warnings\": [\"LOT 번호가 불명확함\"],\n  \"confidence\": 0.95,\n  \"suggested_template_id\": null\n}",
+    "extraction_method": "llm"
+  },
+  "user_corrections": [],
+  "photo_mappings": []
+}

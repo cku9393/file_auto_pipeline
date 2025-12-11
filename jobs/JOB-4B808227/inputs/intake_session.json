@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0",
+  "session_id": "7d1695e4-caba-4785-a426-e776205be668",
+  "created_at": "2025-12-11T05:24:07.817363+00:00",
+  "immutable": true,
+  "messages": [
+    {
+      "role": "user",
+      "content": "작업지시번호: WO-2412-007\n라인: L2\n고객사: GS건설\n프로젝트: GS Tower 난간 보강\n\n검사일: 2024-12-11\n검사자: 김테스트\n\n도면번호: CBZ-R40798-002-01\n부품명: 난간 보강플레이트\n수량: 12 EA\n\n치수 측정 결과:\n- A (플레이트 길이) 설계 300.0 ±1.0 → 실측 299.8 / 299.7 / 299.9\n- B (볼트홀 간격) 설계 120.0 ±0.5 → 실측 120.7 / 120.8 / 120.6  → 허용범위 초과\n- C (두께) 설계 9.0 ±0.3 → 실측 8.9 / 9.0 / 8.9\n\n육안 검사:\n- 용접 비드 양호\n- 모서리 버어(burr) 일부 발생, 현장에서 디버링 처리 완료\n\n종합 판정(초기): FAIL\n엔지니어 판단: 구조 안전성에 영향 없음, 고객사와 협의 후 사용 가능할 것으로 판단\nOverride 요청 사유:\n- 코드: MEASUREMENT_OUT_OF_TOLERANCE\n- 상세: 볼트홀 간격이 +0.7mm 수준으로 설계 공차를 벗어났으나, 설치 후 장공 구조상 문제 없음. 시공 엔지니어, 품질팀 합의 완료.\n",
+      "timestamp": "2025-12-11T05:24:07.839663+00:00",
+      "attachments": []
+    },
+    {
+      "role": "assistant",
+      "content": "분석 결과 ⚠️<br>- 추출된 필드: 8개<br>- 누락 필수값: lot, result<br>누락값을 채워주시거나 override 해주세요.",
+      "timestamp": "2025-12-11T05:24:16.751712+00:00",
+      "attachments": []
+    }
+  ],
+  "ocr_results": {},
+  "extraction_result": {
+    "success": true,
+    "fields": {
+      "wo_no": "WO-2412-007",
+      "line": "L2",
+      "part_no": "CBZ-R40798-002-01",
+      "lot": null,
+      "result": "- A (플레이트 길이) 설계 300.0 ±1.0 → 실측 299.8 / 299.7 / 299.9",
+      "inspector": "김테스트",
+      "date": "2024-12-11",
+      "remark": "볼트홀 간격 허용범위 초과. 엔지니어 판단: 구조 안전성에 영향 없음, 고객사와 협의 후 사용 가능할 것으로 판단. Override 요청(MEASUREMENT_OUT_OF_TOLERANCE): 볼트홀 간격이 +0.7mm 수준으로 설계 공차를 벗어났으나, 설치 후 장공 구조상 문제 없음. 시공 엔지니어, 품질팀 합의 완료. 육안검사: 모서리 버어 일부 발생, 현장에서 디버링 처리 완료."
+    },
+    "measurements": [
+      {
+        "item": "A (플레이트 길이)",
+        "spec": "300.0 ±1.0",
+        "measured": "299.8 / 299.7 / 299.9",
+        "result": "PASS"
+      },
+      {
+        "item": "B (볼트홀 간격)",
+        "spec": "120.0 ±0.5",
+        "measured": "120.7 / 120.8 / 120.6",
+        "result": "FAIL"
+      },
+      {
+        "item": "C (두께)",
+        "spec": "9.0 ±0.3",
+        "measured": "8.9 / 9.0 / 8.9",
+        "result": "PASS"
+      }
+    ],
+    "missing_fields": [
+      "lot"
+    ],
+    "warnings": [
+      "LOT 번호가 문서에 명시되지 않음",
+      "종합 판정이 FAIL이나 Override 요청이 있음 - 최종 승인 여부 확인 필요"
+    ],
+    "confidence": 0.92,
+    "model_requested": "claude-opus-4-5-20251101",
+    "model_used": "claude-opus-4-5-20251101",
+    "extracted_at": "2025-12-11T05:24:07.923876+00:00",
+    "provider": "anthropic",
+    "model_params": {
+      "max_tokens": 4096
+    },
+    "request_id": "msg_01GVjMKZQE1WLRFDLJiwDcGa",
+    "llm_raw_output": "```json\n{\n  \"fields\": {\n    \"wo_no\": \"WO-2412-007\",\n    \"line\": \"L2\",\n    \"part_no\": \"CBZ-R40798-002-01\",\n    \"lot\": null,\n    \"result\": \"FAIL\",\n    \"inspector\": \"김테스트\",\n    \"date\": \"2024-12-11\",\n    \"remark\": \"볼트홀 간격 허용범위 초과. 엔지니어 판단: 구조 안전성에 영향 없음, 고객사와 협의 후 사용 가능할 것으로 판단. Override 요청(MEASUREMENT_OUT_OF_TOLERANCE): 볼트홀 간격이 +0.7mm 수준으로 설계 공차를 벗어났으나, 설치 후 장공 구조상 문제 없음. 시공 엔지니어, 품질팀 합의 완료. 육안검사: 모서리 버어 일부 발생, 현장에서 디버링 처리 완료.\"\n  },\n  \"measurements\": [\n    {\n      \"item\": \"A (플레이트 길이)\",\n      \"spec\": \"300.0 ±1.0\",\n      \"measured\": \"299.8 / 299.7 / 299.9\",\n      \"result\": \"PASS\"\n    },\n    {\n      \"item\": \"B (볼트홀 간격)\",\n      \"spec\": \"120.0 ±0.5\",\n      \"measured\": \"120.7 / 120.8 / 120.6\",\n      \"result\": \"FAIL\"\n    },\n    {\n      \"item\": \"C (두께)\",\n      \"spec\": \"9.0 ±0.3\",\n      \"measured\": \"8.9 / 9.0 / 8.9\",\n      \"result\": \"PASS\"\n    }\n  ],\n  \"missing_fields\": [\"lot\"],\n  \"warnings\": [\n    \"LOT 번호가 문서에 명시되지 않음\",\n    \"종합 판정이 FAIL이나 Override 요청이 있음 - 최종 승인 여부 확인 필요\"\n  ],\n  \"confidence\": 0.92,\n  \"suggested_template_id\": null\n}\n```",
+    "llm_raw_output_hash": "sha256:14ab42963c03b8c6",
+    "llm_raw_truncated": false,
+    "prompt_template_id": "/home/acsmi/projects/file_auto_pipline/prompts/extract_fields.txt",
+    "prompt_template_version": "1.0.0",
+    "prompt_user_variables": {
+      "user_input": "작업지시번호: WO-2412-007\n라인: L2\n고객사: GS건설\n프로젝트: GS Tower 난간 보강\n\n검사일: 2024-12-11\n검사자: 김테스트\n\n도면번호: CBZ-R40798-002-01\n부품명: 난간 보강플레이트\n수량: 12 EA\n\n치수 측정 결과:\n- A (플레이트 길이) 설계 300.0 ±1.0 → 실측 299.8 / 299.7 / 299.9\n- B (볼트홀 간격) 설계 120.0 ±0.5 → 실측 120.7 / 120.8 / 120.6  → 허용범위 초과\n- C (두께) 설계 9.0 ±0.3 → 실측 8.9 / 9.0 / 8.9\n\n육안 검사:\n- 용접 비드 양호\n- 모서리 버어(burr) 일부 발생, 현장에서 디버링 처리 완료\n\n종합 판정(초기): FAIL\n엔지니어 판단: 구조 안전성에 영향 없음, 고객사와 협의 후 사용 가능할 것으로 판단\nOverride 요청 사유:\n- 코드: MEASUREMENT_OUT_OF_TOLERANCE\n- 상세: 볼트홀 간격이 +0.7mm 수준으로 설계 공차를 벗어났으나, 설치 후 장공 구조상 문제 없음. 시공 엔지니어, 품질팀 합의 완료.\n",
+      "ocr_text": ""
+    },
+    "prompt_rendered": "당신은 제조 검사 문서에서 정보를 추출하는 전문가입니다.\n\n## 입력 계약 (definition.yaml 기준)\n- wo_no: type=token, importance=critical, aliases=['WO No', 'WO No.', 'Work Order', '작업지시번호', 'W/O']\n- line: type=token, importance=critical, aliases=['Line', 'Line No', '라인', '라인번호']\n- part_no: type=token, importance=critical, aliases=['Part No', 'Part No.', 'Part Number', '부품번호', 'P/N']\n- lot: type=token, importance=critical, aliases=['Lot', 'Lot No', 'Lot No.', '로트', '로트번호']\n- result: type=token, importance=critical, aliases=['Result', '결과', '판정', 'Final Result']\n- inspector: type=token, importance=reference, aliases=['Inspector', '검사자', 'Inspected By', '담당자']\n- date: type=token, importance=reference, aliases=['Date', '검사일', '일자', 'Inspection Date']\n- remark: type=free_text, importance=reference, aliases=['Remark', 'Remarks', '비고', 'Notes', 'Comment']\n\n## 사용자 입력\n작업지시번호: WO-2412-007\n라인: L2\n고객사: GS건설\n프로젝트: GS Tower 난간 보강\n\n검사일: 2024-12-11\n검사자: 김테스트\n\n도면번호: CBZ-R40798-002-01\n부품명: 난간 보강플레이트\n수량: 12 EA\n\n치수 측정 결과:\n- A (플레이트 길이) 설계 300.0 ±1.0 → 실측 299.8 / 299.7 / 299.9\n- B (볼트홀 간격) 설계 120.0 ±0.5 → 실측 120.7 / 120.8 / 120.6  → 허용범위 초과\n- C (두께) 설계 9.0 ±0.3 → 실측 8.9 / 9.0 / 8.9\n\n육안 검사:\n- 용접 비드 양호\n- 모서리 버어(burr) 일부 발생, 현장에서 디버링 처리 완료\n\n종합 판정(초기): FAIL\n엔지니어 판단: 구조 안전성에 영향 없음, 고객사와 협의 후 사용 가능할 것으로 판단\nOverride 요청 사유:\n- 코드: MEASUREMENT_OUT_OF_TOLERANCE\n- 상세: 볼트홀 간격이 +0.7mm 수준으로 설계 공차를 벗어났으나, 설치 후 장공 구조상 문제 없음. 시공 엔지니어, 품질팀 합의 완료.\n\n\n## OCR 추출 텍스트 (있는 경우)\n(없음)\n\n## 지시사항\n1. 위 입력에서 필드를 추출하세요\n2. 측정 데이터가 있다면 표 형식으로 추출하세요\n3. 누락된 필수 필드가 있으면 missing_fields에 명시하세요\n\n## 중요: result 필드 규칙 (반드시 준수)\n\n\"result\" 필드는 최종 판정 결과입니다. **반드시 아래 값 중 하나만** 사용하세요:\n\n허용되는 값:\n- \"PASS\", \"OK\", \"합격\", \"O\" → 합격\n- \"FAIL\", \"NG\", \"불합격\", \"X\" → 불합격\n\n금지 사항:\n- 자유로운 문장을 result에 넣지 마세요\n- 치수 설명(예: \"설계: 2.7, 실측: 2.65\")을 result에 넣지 마세요\n- 여러 값을 조합하지 마세요 (예: \"NG → PASS\")\n\nresult 값을 찾는 방법:\n- \"종합 판정\", \"최종 결과\", \"판정 결과\"와 같은 표현이 있는 줄에서 찾으세요\n- 개별 측정 항목의 판정이 아닌, 전체 검사의 최종 판정을 찾으세요\n- 판정값을 찾을 수 없으면 result를 null로 설정하세요 (추측하지 마세요)\n\n## 응답 형식 (JSON만)\n{\n  \"fields\": {\n    \"wo_no\": \"...\",\n    \"line\": \"...\",\n    \"result\": \"PASS 또는 FAIL 또는 null\"\n  },\n  \"measurements\": [\n    {\"item\": \"...\", \"spec\": \"...\", \"measured\": \"...\", \"result\": \"...\"}\n  ],\n  \"missing_fields\": [\"inspector\"],\n  \"warnings\": [\"LOT 번호가 불명확함\"],\n  \"confidence\": 0.95,\n  \"suggested_template_id\": null\n}\n",
+    "prompt_hash": "sha256:c5e702c756ac70ec",
+    "prompt_used": "당신은 제조 검사 문서에서 정보를 추출하는 전문가입니다.\n\n## 입력 계약 (definition.yaml 기준)\n- wo_no: type=token, importance=critical, aliases=['WO No', 'WO No.', 'Work Order', '작업지시번호', 'W/O']\n- line: type=token, importance=critical, aliases=['Line', 'Line No', '라인', '라인번호']\n- part_no: type=token, importance=critical, aliases=['Part No', 'Part No.', 'Part Number', '부품번호', 'P/N']\n- lot: type=token, importance=critical, aliases=['Lot', 'Lot No', 'Lot No.', '로트', '로트번호']\n- result: type=token, importance=critical, aliases=['Result', '결과', '판정', 'Final Result']\n- inspector: type=token, importance=reference, aliases=['Inspector', '검사자', 'Inspected By', '담당자']\n- date: type=token, importance=reference, aliases=['Date', '검사일', '일자', 'Inspection Date']\n- remark: type=free_text, importance=reference, aliases=['Remark', 'Remarks', '비고', 'Notes', 'Comment']\n\n## 사용자 입력\n작업지시번호: WO-2412-007\n라인: L2\n고객사: GS건설\n프로젝트: GS Tower 난간 보강\n\n검사일: 2024-12-11\n검사자: 김테스트\n\n도면번호: CBZ-R40798-002-01\n부품명: 난간 보강플레이트\n수량: 12 EA\n\n치수 측정 결과:\n- A (플레이트 길이) 설계 300.0 ±1.0 → 실측 299.8 / 299.7 / 299.9\n- B (볼트홀 간격) 설계 120.0 ±0.5 → 실측 120.7 / 120.8 / 120.6  → 허용범위 초과\n- C (두께) 설계 9.0 ±0.3 → 실측 8.9 / 9.0 / 8.9\n\n육안 검사:\n- 용접 비드 양호\n- 모서리 버어(burr) 일부 발생, 현장에서 디버링 처리 완료\n\n종합 판정(초기): FAIL\n엔지니어 판단: 구조 안전성에 영향 없음, 고객사와 협의 후 사용 가능할 것으로 판단\nOverride 요청 사유:\n- 코드: MEASUREMENT_OUT_OF_TOLERANCE\n- 상세: 볼트홀 간격이 +0.7mm 수준으로 설계 공차를 벗어났으나, 설치 후 장공 구조상 문제 없음. 시공 엔지니어, 품질팀 합의 완료.\n\n\n## OCR 추출 텍스트 (있는 경우)\n(없음)\n\n## 지시사항\n1. 위 입력에서 필드를 추출하세요\n2. 측정 데이터가 있다면 표 형식으로 추출하세요\n3. 누락된 필수 필드가 있으면 missing_fields에 명시하세요\n\n## 중요: result 필드 규칙 (반드시 준수)\n\n\"result\" 필드는 최종 판정 결과입니다. **반드시 아래 값 중 하나만** 사용하세요:\n\n허용되는 값:\n- \"PASS\", \"OK\", \"합격\", \"O\" → 합격\n- \"FAIL\", \"NG\", \"불합격\", \"X\" → 불합격\n\n금지 사항:\n- 자유로운 문장을 result에 넣지 마세요\n- 치수 설명(예: \"설계: 2.7, 실측: 2.65\")을 result에 넣지 마세요\n- 여러 값을 조합하지 마세요 (예: \"NG → PASS\")\n\nresult 값을 찾는 방법:\n- \"종합 판정\", \"최종 결과\", \"판정 결과\"와 같은 표현이 있는 줄에서 찾으세요\n- 개별 측정 항목의 판정이 아닌, 전체 검사의 최종 판정을 찾으세요\n- 판정값을 찾을 수 없으면 result를 null로 설정하세요 (추측하지 마세요)\n\n## 응답 형식 (JSON만)\n{\n  \"fields\": {\n    \"wo_no\": \"...\",\n    \"line\": \"...\",\n    \"result\": \"PASS 또는 FAIL 또는 null\"\n  },\n  \"measurements\": [\n    {\"item\": \"...\", \"spec\": \"...\", \"measured\": \"...\", \"result\": \"...\"}\n  ],\n  \"missing_fields\": [\"inspector\"],\n  \"warnings\": [\"LOT 번호가 불명확함\"],\n  \"confidence\": 0.95,\n  \"suggested_template_id\": null\n}\n",
+    "extraction_method": "llm"
+  },
+  "user_corrections": [],
+  "photo_mappings": []
+}

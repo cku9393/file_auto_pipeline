@@ -525,4 +525,58 @@ body {
     border-radius: var(--radius);
     max-width: 500px;
     width: 90%;
+    position: relative;
+    z-index: 1001;
+}
+
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+}
+
+.modal-content h3 {
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+/* Alerts */
+.alert {
+    padding: 1rem;
+    border-radius: var(--radius);
+    margin-top: 1rem;
+}
+
+.alert-success {
+    background: #dcfce7;
+    color: var(--success);
+}
+
+.alert-error {
+    background: #fee2e2;
+    color: var(--error);
+}
+
+/* Template register prompt */
+.template-register-prompt {
+    border-left: 3px solid var(--primary);
+}
+
+.template-register-prompt p {
+    margin-bottom: 0.75rem;
+}
+
+.template-register-prompt .btn {
+    margin-top: 0.5rem;
 }

@@ -6,6 +6,11 @@ FastAPI 애플리케이션 진입점.
 - 프로덕션: uv run uvicorn src.app.main:app
 """
 
+# .env 파일 로드 (다른 import보다 먼저!)
+from dotenv import load_dotenv
+
+load_dotenv()  # 프로젝트 루트의 .env 파일 자동 로드
+
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path

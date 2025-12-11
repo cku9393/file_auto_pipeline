@@ -6,11 +6,11 @@
 <div class="chat-container">
     <header class="chat-header">
         <h1>📄 문서 생성</h1>
-        <select id="template-select" class="template-selector">
-            <option value="base">기본 템플릿</option>
-            {% for template in templates %}
-            <option value="{{ template.template_id }}">{{ template.display_name }}</option>
-            {% endfor %}
+        <select id="template-select" class="template-selector"
+                hx-get="/api/chat/templates/options"
+                hx-trigger="load"
+                hx-swap="innerHTML">
+            <option value="base">로딩 중...</option>
         </select>
     </header>
 

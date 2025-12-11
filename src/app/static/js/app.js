@@ -199,11 +199,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// HTMX 요청 전 세션 ID 추가
+// HTMX 요청 전 세션 ID + content 추가 (TOCTOU-safe 폼 직렬화)
 document.body.addEventListener('htmx:configRequest', function(event) {
     const sessionId = getSessionId();
-    if (event.detail.parameters) {
-        event.detail.parameters['session_id'] = sessionId;
+    event.detail.parameters = event.detail.parameters || {};
+    event.detail.parameters['session_id'] = sessionId;
+
+    // chat-form 제출 시 content 명시적 추가 (HTMX 직렬화 문제 방지)
+    if (event.detail.elt && event.detail.elt.id === 'chat-form') {
+        const textarea = document.querySelector('#chat-form textarea[name="content"]');
+        if (textarea && typeof textarea.value === 'string') {
+            event.detail.parameters['content'] = textarea.value;
+        }
     }
 });
 
@@ -242,6 +249,141 @@ document.body.addEventListener('htmx:responseError', function(event) {
     console.error('HTMX Error:', event.detail);
     alert('오류가 발생했습니다. 다시 시도해주세요.');
 });
+
+// =============================================================================
+// Template Registration Modal
+// =============================================================================
+
+/**
+ * 템플릿 등록 모달 열기
+ */
+function openTemplateRegisterModal(sessionId, filename, suggestedId, suggestedName) {
+    // 모달 HTML 생성
+    const modalHtml = `
+        <div class="modal-backdrop" onclick="closeTemplateModal()"></div>
+        <div class="modal-content">
+            <h3>📋 템플릿으로 등록</h3>
+            <p>파일: <strong>${escapeHtml(filename)}</strong></p>
+
+            <form id="template-register-form" onsubmit="submitTemplateRegistration(event)">
+                <input type="hidden" name="session_id" value="${escapeHtml(sessionId)}">
+                <input type="hidden" name="source_filename" value="${escapeHtml(filename)}">
+
+                <div class="form-group">
+                    <label for="template-id">템플릿 ID</label>
+                    <input type="text" id="template-id" name="template_id"
+                           value="${escapeHtml(suggestedId)}"
+                           pattern="[a-z0-9_]+" required
+                           placeholder="customer_a_inspection">
+                    <small>소문자, 숫자, 밑줄만 허용</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="display-name">표시 이름</label>
+                    <input type="text" id="display-name" name="display_name"
+                           value="${escapeHtml(suggestedName)}" required
+                           placeholder="고객사A 검사성적서">
+                </div>
+
+                <div class="form-group">
+                    <label for="doc-type">문서 타입</label>
+                    <select id="doc-type" name="doc_type">
+                        <option value="inspection">검사성적서</option>
+                        <option value="report">보고서</option>
+                        <option value="other">기타</option>
+                    </select>
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeTemplateModal()">취소</button>
+                    <button type="submit" class="btn btn-primary">등록</button>
+                </div>
+            </form>
+
+            <div id="template-register-result"></div>
+        </div>
+    `;
+
+    // 모달 컨테이너에 삽입
+    let modal = document.getElementById('template-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'template-modal';
+        modal.className = 'modal';
+        document.body.appendChild(modal);
+    }
+    modal.innerHTML = modalHtml;
+    modal.style.display = 'flex';
+}
+
+/**
+ * 템플릿 모달 닫기
+ */
+function closeTemplateModal() {
+    const modal = document.getElementById('template-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.innerHTML = '';
+    }
+}
+
+/**
+ * 템플릿 등록 폼 제출
+ */
+async function submitTemplateRegistration(event) {
+    event.preventDefault();
+
+    const form = event.target;
+    const formData = new FormData(form);
+    const resultDiv = document.getElementById('template-register-result');
+
+    // 버튼 비활성화 + 로딩 표시
+    const submitBtn = form.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '등록 중...';
+
+    try {
+        const response = await fetch('/api/templates', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            // 성공 메시지
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    ✅ 템플릿 '${escapeHtml(data.template_id)}'이(가) 등록되었습니다!
+                </div>
+            `;
+
+            // 채팅창에도 알림
+            appendChatMessage('assistant', `✅ 템플릿 '${data.template_id}'이(가) 등록되었습니다.`);
+
+            // 1.5초 후 모달 닫기
+            setTimeout(closeTemplateModal, 1500);
+        } else {
+            // 에러 메시지
+            const errorMsg = data.detail?.message || data.message || '등록 실패';
+            resultDiv.innerHTML = `
+                <div class="alert alert-error">
+                    ❌ ${escapeHtml(errorMsg)}
+                </div>
+            `;
+            submitBtn.disabled = false;
+            submitBtn.textContent = '등록';
+        }
+    } catch (e) {
+        resultDiv.innerHTML = `
+            <div class="alert alert-error">
+                ❌ 네트워크 오류: ${escapeHtml(e.message)}
+            </div>
+        `;
+        submitBtn.disabled = false;
+        submitBtn.textContent = '등록';
+    }
+}
 
 // =============================================================================
 // Override Modal
