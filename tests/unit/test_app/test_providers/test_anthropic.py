@@ -374,8 +374,10 @@ class TestExtractFields:
         self,
         sample_definition,
         sample_prompt_template,
+        monkeypatch,
     ):
         """ADR-0003: model_requested + model_used 기록."""
+        monkeypatch.setenv("MY_ANTHROPIC_KEY", "test-api-key")
         provider = ClaudeProvider(model="claude-sonnet-4-20250514")
 
         # factory 사용으로 mock 설정 실수 방지
