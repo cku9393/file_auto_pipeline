@@ -313,7 +313,7 @@ async def chat_stream(
 @api_router.post("/message")
 async def send_message(
     request: Request,
-    content: str | None = Form(None),
+    content: str = Form(...),  # 필수 필드: 없으면 422 (빈 문자열은 허용, 내부에서 처리)
     session_id: str | None = Form(None),
 ) -> HTMLResponse:
     """

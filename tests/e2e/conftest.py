@@ -21,9 +21,21 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
-from playwright.sync_api import Page
+
+# Playwright는 선택적 의존성 - 설치되어 있을 때만 import
+try:
+    from playwright.sync_api import Page
+
+    PLAYWRIGHT_AVAILABLE = True
+except ImportError:
+    PLAYWRIGHT_AVAILABLE = False
+    Page = None  # type: ignore[misc,assignment]
+
+if TYPE_CHECKING:
+    from playwright.sync_api import Page
 
 # =============================================================================
 # 상수
@@ -70,51 +82,51 @@ def mask_sensitive_data(content: str) -> str:
 
 
 # =============================================================================
-# Playwright 기본 설정
+# Playwright 기본 설정 (Playwright가 설치된 경우에만 활성화)
 # =============================================================================
 
+if PLAYWRIGHT_AVAILABLE:
 
-@pytest.fixture(scope="session")
-def browser_context_args(browser_context_args: dict) -> dict:
-    """브라우저 컨텍스트 설정."""
-    args = {
-        **browser_context_args,
-        "viewport": {"width": 1280, "height": 720},
-        "ignore_https_errors": True,
-    }
+    @pytest.fixture(scope="session")
+    def browser_context_args(browser_context_args: dict) -> dict:
+        """브라우저 컨텍스트 설정."""
+        args = {
+            **browser_context_args,
+            "viewport": {"width": 1280, "height": 720},
+            "ignore_https_errors": True,
+        }
 
-    # CI에서만 trace 활성화 (로컬은 선택적)
-    if IS_CI:
-        args["record_video_dir"] = str(ARTIFACTS_DIR / "videos")
+        # CI에서만 trace 활성화 (로컬은 선택적)
+        if IS_CI:
+            args["record_video_dir"] = str(ARTIFACTS_DIR / "videos")
 
-    return args
+        return args
 
+    @pytest.fixture
+    def page(context, page: "Page") -> "Page":
+        """
+        페이지 fixture with 타임아웃 + 콘솔 로그 수집.
 
-@pytest.fixture
-def page(context, page: Page) -> Page:
-    """
-    페이지 fixture with 타임아웃 + 콘솔 로그 수집.
+        타임아웃:
+        - 기본 액션: 30초
+        - 네비게이션: 30초
+        """
+        page.set_default_timeout(30000)
+        page.set_default_navigation_timeout(30000)
 
-    타임아웃:
-    - 기본 액션: 30초
-    - 네비게이션: 30초
-    """
-    page.set_default_timeout(30000)
-    page.set_default_navigation_timeout(30000)
+        # 콘솔 로그 수집
+        console_logs: list[str] = []
+        page.on("console", lambda msg: console_logs.append(f"[{msg.type}] {msg.text}"))
+        page.on("pageerror", lambda err: console_logs.append(f"[PAGE_ERROR] {err}"))
 
-    # 콘솔 로그 수집
-    console_logs = []
-    page.on("console", lambda msg: console_logs.append(f"[{msg.type}] {msg.text}"))
-    page.on("pageerror", lambda err: console_logs.append(f"[PAGE_ERROR] {err}"))
+        # 테스트에서 접근 가능하도록 저장
+        page._console_logs = console_logs  # type: ignore[attr-defined]
 
-    # 테스트에서 접근 가능하도록 저장
-    page._console_logs = console_logs
+        # CI에서 trace 시작
+        if IS_CI:
+            context.tracing.start(screenshots=True, snapshots=True, sources=True)
 
-    # CI에서 trace 시작
-    if IS_CI:
-        context.tracing.start(screenshots=True, snapshots=True, sources=True)
-
-    yield page
+        yield page
 
 
 # =============================================================================

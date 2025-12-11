@@ -232,6 +232,27 @@ class TestChatErrorCases:
 
         assert response.status_code == 422  # Validation Error
 
+    def test_message_with_empty_content(self, client):
+        """content가 빈 문자열일 때 422 (FastAPI는 빈 Form 필드를 missing으로 처리)."""
+        response = client.post(
+            "/api/chat/message",
+            data={"content": "", "session_id": "test"},
+        )
+
+        # FastAPI의 Form(...)은 빈 문자열을 missing으로 취급하여 422 반환
+        assert response.status_code == 422
+
+    def test_message_with_whitespace_content(self, client):
+        """content가 공백만 있을 때 친절한 안내 메시지 반환."""
+        response = client.post(
+            "/api/chat/message",
+            data={"content": "   ", "session_id": "test"},
+        )
+
+        # 공백만 있는 경우 200 + 친절한 안내 메시지
+        assert response.status_code == 200
+        assert "메시지를 입력해주세요" in response.text
+
     def test_upload_without_file(self, client):
         """파일 없이 업로드."""
         response = client.post(

@@ -547,9 +547,12 @@ class TestRegexExtractionNoRaw:
     """정규식 추출 시 raw 데이터 없음 테스트."""
 
     @pytest.mark.asyncio
-    async def test_regex_extraction_has_no_llm_raw(self, tmp_path: Path):
+    async def test_regex_extraction_has_no_llm_raw(self, tmp_path: Path, monkeypatch):
         """정규식으로 추출 시 llm_raw_output은 None."""
         from src.app.services.extract import ExtractionService
+
+        # ExtractionService 초기화 시 ClaudeProvider가 API 키를 요구하므로 환경변수 설정
+        monkeypatch.setenv("MY_ANTHROPIC_KEY", "test-api-key")
 
         # definition.yaml 생성
         definition_path = tmp_path / "definition.yaml"

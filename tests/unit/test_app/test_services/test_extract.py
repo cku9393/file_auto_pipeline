@@ -152,8 +152,11 @@ class TestExtractionServiceInit:
         config,
         definition_path,
         prompts_dir,
+        monkeypatch,
     ):
         """Provider 없으면 config 기반 생성."""
+        monkeypatch.setenv("MY_ANTHROPIC_KEY", "test-api-key")
+
         service = ExtractionService(
             config=config,
             definition_path=definition_path,
