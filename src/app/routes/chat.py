@@ -331,9 +331,9 @@ def build_validation_error_html(
         # "외 다수" 표시 (조기 종료 시)
         if has_more:
             validation_items.append(
-                f'<div class="error-item overflow-notice">'
-                f'<span class="error-code">[INVALID_DATA]</span> '
-                f"🔴 외 다수의 측정 이슈가 있습니다</div>"
+                '<div class="error-item overflow-notice">'
+                '<span class="error-code">[INVALID_DATA]</span> '
+                "🔴 외 다수의 측정 이슈가 있습니다</div>"
             )
 
     # 4) Override 검증 실패 (별도 섹션 - 시스템 처리 오류)
