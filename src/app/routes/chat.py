@@ -26,7 +26,7 @@ import uuid
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, StreamingResponse
@@ -241,7 +241,7 @@ def build_oob_session_input(session_id: str) -> str:
 def build_validation_error_html(
     validation: "ValidationResult",
     *,
-    measurement_issues: dict[str, list[str]] | None = None,
+    measurement_issues: Optional[Dict[str, List[str]]] = None,
 ) -> str:
     """
     검증 오류/경고를 카드 형태 HTML로 생성.
