@@ -26,7 +26,7 @@ import uuid
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, StreamingResponse
@@ -35,6 +35,9 @@ from fastapi.templating import Jinja2Templates
 from src.app.services.intake import IntakeService
 from src.core.ssot_job import atomic_write_json_exclusive
 from src.templates.manager import TemplateManager
+
+if TYPE_CHECKING:
+    from src.app.services.validate import ValidationResult
 
 # Jinja2 템플릿 설정
 _templates_dir = Path(__file__).parent.parent / "templates"
@@ -241,7 +244,7 @@ def build_oob_session_input(session_id: str) -> str:
 def build_validation_error_html(
     validation: "ValidationResult",
     *,
-    measurement_issues: Optional[Dict[str, List[str]]] = None,
+    measurement_issues: dict[str, list[str]] | None = None,
 ) -> str:
     """
     검증 오류/경고를 카드 형태 HTML로 생성.
