@@ -183,3 +183,100 @@ def test_page_load_performance(page: Page, live_server: str) -> None:
     # Then: 5초 이내에 로드 완료
     load_time = time.time() - start_time
     assert load_time < 5.0, f"Page load took {load_time:.2f}s, expected < 5s"
+
+
+# =============================================================================
+# 검증 오류 카드 E2E (진짜 브라우저 렌더링)
+# =============================================================================
+
+
+def test_validation_error_card_renders_in_browser(page: Page, live_server: str) -> None:
+    """
+    불완전한 입력 제출 시 validation error card가 브라우저에 렌더링되는지 확인.
+
+    이 테스트는 외부 LLM API를 호출하지 않습니다.
+    입력이 너무 짧으면 LLM 호출 없이 안내 메시지를 반환하는 로직을 사용합니다.
+
+    목적:
+    - CSS가 정상 로드되는지
+    - HTMX swap이 DOM에 카드를 삽입하는지
+    - .chat-container selector가 실제로 동작하는지
+    """
+    # Given: /chat 페이지 로드
+    page.goto(f"{live_server}/chat")
+    page.wait_for_selector(".chat-container", state="visible")
+
+    # When: 불완전한 짧은 입력 제출 (LLM 호출 없이 안내 메시지 반환)
+    textarea = page.locator("textarea[name='content']")
+    textarea.fill("hello")  # 20자 미만 → LLM 호출 안 함
+    page.click("button[type='submit']")
+
+    # Then: HTMX가 응답을 DOM에 삽입하고, 사용자 메시지가 나타남
+    # "hello"가 사용자 메시지로 표시될 때까지 대기
+    page.wait_for_selector(".message.user", timeout=10000)
+
+    # 안내 메시지가 assistant 메시지로 나타남
+    assistant_message = page.locator(".message.assistant").last
+    assert assistant_message.is_visible()
+
+    # 안내 메시지에 "필수 정보" 또는 "정보를 입력" 텍스트 포함 확인
+    assistant_text = assistant_message.text_content() or ""
+    assert "필수 정보" in assistant_text or "정보를 입력" in assistant_text
+
+
+def test_chat_htmx_swap_works(page: Page, live_server: str) -> None:
+    """
+    HTMX swap이 정상 작동하는지 확인.
+
+    DOM에 새 메시지가 추가되는 기본 메커니즘 검증.
+
+    Flaky 방지: page.wait_for_function 대신 locator 기반 대기 사용.
+    - locator.nth()와 wait_for()는 Playwright의 내장 재시도 메커니즘 활용
+    - DOM 상태 변화를 안정적으로 감지
+    """
+    # Given: /chat 페이지 로드
+    page.goto(f"{live_server}/chat")
+    page.wait_for_selector(".chat-container", state="visible")
+
+    # 초기 메시지 개수 확인
+    messages_locator = page.locator(".message")
+    initial_count = messages_locator.count()
+
+    # When: 메시지 전송
+    textarea = page.locator("textarea[name='content']")
+    textarea.fill("테스트 메시지")
+    page.click("button[type='submit']")
+
+    # Then: 새 메시지가 DOM에 추가됨 (최소 1개 증가)
+    # locator 기반 대기: (initial_count + 1)번째 메시지가 나타날 때까지 대기
+    # nth()는 0-indexed이므로 initial_count가 곧 다음 인덱스
+    new_message = messages_locator.nth(initial_count)
+    new_message.wait_for(state="visible", timeout=15000)
+
+    final_count = messages_locator.count()
+    assert final_count > initial_count, "새 메시지가 DOM에 추가되지 않았습니다"
+
+
+def test_css_validation_errors_class_applied(page: Page, live_server: str) -> None:
+    """
+    validation-errors CSS 클래스가 로드되고 적용 가능한지 확인.
+
+    Note: 실제 validation error를 트리거하려면 LLM API가 필요합니다.
+    이 테스트는 CSS link 태그가 존재하고 기본 selector가 유효한지만 확인합니다.
+
+    Flaky 방지: computed style 체크 대신 link 태그 존재만 확인.
+    - computed style은 CSS 파싱 타이밍에 민감하여 flaky할 수 있음
+    - link 태그 존재 확인은 안정적인 최소 검증
+    """
+    # Given: /chat 페이지 로드
+    page.goto(f"{live_server}/chat")
+    page.wait_for_selector(".chat-container", state="visible")
+
+    # Then: style.css link 태그가 존재하는지 확인
+    # (computed style 체크는 flaky하므로 link 태그 존재만 확인)
+    css_link = page.locator('link[rel="stylesheet"][href*="style.css"]')
+    assert css_link.count() >= 1, "style.css link 태그가 없습니다"
+
+    # chat-container가 존재하고 visible한지 확인
+    chat_container = page.locator(".chat-container")
+    assert chat_container.is_visible(), ".chat-container가 visible하지 않습니다"

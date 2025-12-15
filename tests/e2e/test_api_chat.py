@@ -297,3 +297,85 @@ class TestChatErrorCases:
         )
 
         assert response.status_code == 422
+
+
+# =============================================================================
+# Validation Error Card E2E (CI 안전망)
+# =============================================================================
+
+
+class TestValidationErrorCardE2E:
+    """
+    검증 오류 카드 E2E 테스트.
+
+    목적: CSS/템플릿 깨짐을 CI에서 잡는 최소 안전망.
+    - 필수 필드 누락 시 validation-errors 컨테이너 + error-item 존재 확인
+    - 에러 코드가 도메인과 일치하는지 확인
+    """
+
+    @pytest.mark.skip(reason="Requires external API - run locally with API key")
+    def test_missing_required_shows_error_card(self, client):
+        """
+        필수 필드 누락 입력 → 빨간 카드 DOM 존재 + 텍스트 포함.
+
+        Note: 외부 LLM API 호출이 필요하므로 CI에서는 skip.
+        로컬 테스트: pytest tests/e2e/test_api_chat.py -k "error_card" --run-external
+        """
+        response = client.post(
+            "/api/chat/message",
+            data={
+                # 필수 필드(wo_no, line, result) 의도적 누락
+                "content": "이것은 불완전한 입력입니다",
+                "session_id": "",
+            },
+        )
+
+        assert response.status_code == 200
+        html = response.text
+
+        # 1) validation-errors 컨테이너 존재
+        assert "validation-errors" in html
+
+        # 2) error-item 클래스 존재
+        assert "error-item" in html
+
+        # 3) 에러 코드 존재 (domain/errors.py와 일치)
+        assert "[MISSING_REQUIRED_FIELD]" in html
+
+        # 4) 필수 필드 누락 메시지
+        assert "필수 필드 누락" in html
+
+    def test_validation_error_html_structure_unit(self, client):
+        """
+        E2E 환경에서 validation error HTML 구조 검증 (API 호출 없이).
+
+        route 함수를 직접 호출하여 HTML 구조 검증.
+        외부 API 의존 없이 CI에서 실행 가능.
+        """
+        from src.app.routes.chat import build_validation_error_html
+        from src.app.services.validate import ValidationResult
+
+        # 필수 필드 누락 시나리오
+        validation = ValidationResult(
+            valid=False,
+            missing_required=["wo_no", "line", "result"],
+        )
+
+        html = build_validation_error_html(validation)
+
+        # 1) validation-errors 컨테이너 존재
+        assert 'class="validation-errors"' in html
+
+        # 2) error-item 클래스 존재
+        assert 'class="error-item"' in html
+
+        # 3) 에러 코드 존재 (domain/errors.py와 일치)
+        assert "[MISSING_REQUIRED_FIELD]" in html
+
+        # 4) 필수 필드명 포함
+        assert "wo_no" in html
+        assert "line" in html
+        assert "result" in html
+
+        # 5) 🔴 아이콘 존재
+        assert "🔴" in html

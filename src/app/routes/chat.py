@@ -6,6 +6,16 @@ spec-v2.md Section 4.3.1:
 - GET /api/chat/stream → SSE 스트림
 - POST /api/chat/message → 메시지 전송
 - POST /api/chat/upload → 파일 첨부
+
+## 테스트 전용 파라미터 원칙 (_debug 등)
+
+`_debug` 같은 테스트 전용 파라미터는 **내부 함수 인자로만** 노출한다.
+FastAPI 라우트에서 Query/Form 파라미터로 절대 받지 말 것.
+
+이유:
+- 외부에서 켜면 응답 스키마가 달라져 캐싱/비교/골든테스트가 꼬임
+- API 계약 문서에 디버그 필드가 섞이면 클라이언트가 의존하게 됨
+- 보안 리뷰에서 "왜 디버그가 응답에?" 지적 대상
 """
 
 import asyncio
@@ -221,6 +231,367 @@ def build_oob_session_input(session_id: str) -> str:
     """HTMX OOB session_id hidden input 생성."""
     return f'''<input type="hidden" name="session_id" id="session-id"
            value="{escape_html(session_id)}" hx-swap-oob="true">'''
+
+
+# =============================================================================
+# Validation Error HTML Generation
+# =============================================================================
+
+
+def build_validation_error_html(
+    validation: "ValidationResult",
+    *,
+    measurement_issues: dict[str, list[str]] | None = None,
+) -> str:
+    """
+    검증 오류/경고를 카드 형태 HTML로 생성.
+
+    Args:
+        validation: ValidationResult 객체
+        measurement_issues: 측정값 관련 이슈 {
+            "empty_measured": ["row 0", "row 2"],  # 빈 측정값
+            "nan_inf": ["row 1"],  # NaN/Inf 값
+        }
+
+    Returns:
+        HTML string (여러 항목을 카드 형태로 렌더)
+        빈 문자열 반환 시 문제 없음
+
+    리스크 방어:
+    - getattr로 ValidationResult 스키마 변화에 안전
+    - override 실패는 별도 섹션으로 분리 (입력 검증과 구분)
+    - result 필드 중복 방지 (missing_required에 있으면 invalid_values에서 제외)
+    """
+    validation_items: list[str] = []
+    override_items: list[str] = []
+
+    # 스키마 변화에 안전한 접근 (getattr + 빈 배열 폴백)
+    missing_required: list[str] = getattr(validation, "missing_required", []) or []
+    invalid_values: list[dict[str, Any]] = (
+        getattr(validation, "invalid_values", []) or []
+    )
+    invalid_override_fields: list[str] = (
+        getattr(validation, "invalid_override_fields", []) or []
+    )
+    invalid_override_reasons: dict[str, str] = (
+        getattr(validation, "invalid_override_reasons", {}) or {}
+    )
+
+    # 1) 필수 필드 누락 (에러, 🔴) - 에러 코드 포함
+    # 에러 코드는 domain/errors.py ErrorCodes와 일치
+    if missing_required:
+        fields_str = ", ".join(escape_html(f) for f in missing_required)
+        # 다음 액션 힌트 추가
+        hint = _get_missing_field_hint(missing_required)
+        validation_items.append(
+            f'<div class="error-item">'
+            f'<span class="error-code">[MISSING_REQUIRED_FIELD]</span> '
+            f"🔴 필수 필드 누락: {fields_str}"
+            f"{hint}</div>"
+        )
+
+    # 2) 유효하지 않은 값 (에러, 🔴)
+    # result 중복 방지: missing_required에 있으면 invalid_values에서 제외
+    for invalid in invalid_values:
+        field_name = str(invalid.get("field", "unknown"))
+        # result가 missing_required에 이미 있으면 스킵 (중복 방지)
+        if field_name == "result" and "result" in missing_required:
+            continue
+
+        value = escape_html(str(invalid.get("value", "")))
+        error_msg = escape_html(str(invalid.get("error", "")))
+        validation_items.append(
+            f'<div class="error-item">'
+            f'<span class="error-code">[RESULT_INVALID_VALUE]</span> '
+            f'🔴 유효하지 않은 값: {escape_html(field_name)}="{value}" ({error_msg})</div>'
+        )
+
+    # 3) 측정값 관련 이슈 (measurement_issues 파라미터로 전달)
+    if measurement_issues:
+        has_more = measurement_issues.get("has_more", False)
+
+        # 빈 측정값 (에러, 🔴) - INVALID_DATA (빈값/무효값)
+        empty_measured = measurement_issues.get("empty_measured", [])
+        for identifier in empty_measured:
+            validation_items.append(
+                f'<div class="error-item">'
+                f'<span class="error-code">[INVALID_DATA]</span> '
+                f"🔴 빈 측정값: {escape_html(identifier)}</div>"
+            )
+
+        # NaN/Inf 값 (에러, 🔴) - INVALID_DATA (NaN/Inf)
+        nan_inf = measurement_issues.get("nan_inf", [])
+        for identifier in nan_inf:
+            validation_items.append(
+                f'<div class="error-item">'
+                f'<span class="error-code">[INVALID_DATA]</span> '
+                f"🔴 NaN/Inf 포함: {escape_html(identifier)}</div>"
+            )
+
+        # "외 다수" 표시 (조기 종료 시)
+        if has_more:
+            validation_items.append(
+                f'<div class="error-item overflow-notice">'
+                f'<span class="error-code">[INVALID_DATA]</span> '
+                f"🔴 외 다수의 측정 이슈가 있습니다</div>"
+            )
+
+    # 4) Override 검증 실패 (별도 섹션 - 시스템 처리 오류)
+    # 입력 검증과 분리하여 사용자 혼란 방지
+    # OVERRIDE_NOT_ALLOWED: domain/errors.py ErrorCodes와 일치
+    for field_name in invalid_override_fields:
+        reason = invalid_override_reasons.get(field_name, "")
+        override_items.append(
+            f'<div class="override-error-item">'
+            f'<span class="error-code">[OVERRIDE_NOT_ALLOWED]</span> '
+            f"⚙️ Override 처리 실패: {escape_html(field_name)} - {escape_html(reason)}</div>"
+        )
+
+    # 아이템이 없으면 빈 문자열 반환
+    if not validation_items and not override_items:
+        return ""
+
+    # 컨테이너로 감싸서 반환 (입력 검증 / 처리 오류 분리)
+    html_parts: list[str] = []
+
+    if validation_items:
+        html_parts.append(
+            '<div class="validation-errors">\n' + "\n".join(validation_items) + "\n</div>"
+        )
+
+    if override_items:
+        html_parts.append(
+            '<div class="override-errors">\n'
+            '<div class="override-errors-header">⚙️ 시스템 처리 오류</div>\n'
+            + "\n".join(override_items)
+            + "\n</div>"
+        )
+
+    return "\n".join(html_parts)
+
+
+def _get_missing_field_hint(missing_fields: list[str]) -> str:
+    """필수 필드 누락 시 다음 액션 힌트 생성."""
+    hints: list[str] = []
+
+    field_hints = {
+        "wo_no": "예: WO-2412-007",
+        "line": "예: L1, L2",
+        "result": "예: PASS, FAIL, OK, NG",
+        "part_no": "예: P-12345",
+        "lot": "예: LOT-001",
+    }
+
+    for field in missing_fields:
+        if field in field_hints:
+            hints.append(f"{field}: {field_hints[field]}")
+
+    if hints:
+        return '<br><small class="hint">💡 ' + " | ".join(hints) + "</small>"
+    return ""
+
+
+# 측정 이슈 표시 상한 (성능 + UX)
+MAX_MEASUREMENT_ISSUES_DISPLAY = 10
+
+# 빈값/무효값으로 처리할 토큰들 (대소문자 무시)
+EMPTY_VALUE_TOKENS = frozenset({
+    "n/a", "na", "none", "-", "—", "--", "null", "nil", "미측정", "측정불가",
+    ".", "..", "...", "x", "xx", "xxx", "ㅡ", "ㅡㅡ",
+})
+
+
+def _is_empty_or_placeholder(value: str) -> bool:
+    """값이 빈값 또는 플레이스홀더인지 확인."""
+    normalized = value.strip().lower()
+    return normalized in EMPTY_VALUE_TOKENS
+
+
+def _normalize_number_string(value: str) -> str | None:
+    """
+    다양한 로컬 포맷을 표준 숫자 문자열로 변환 시도.
+
+    지원:
+    - "1,234.56" → "1234.56" (영미권)
+    - "1.234,56" → "1234.56" (유럽권)
+    - "1 234.56" → "1234.56" (공백 천단위)
+
+    Returns:
+        정규화된 문자열 또는 None (변환 불가)
+    """
+    s = value.strip()
+    if not s:
+        return None
+
+    # 공백 제거
+    s = s.replace(" ", "")
+
+    # 천단위 구분자 패턴 감지
+    # Case 1: 1,234.56 (쉼표 천단위, 점 소수점)
+    if "," in s and "." in s:
+        if s.rfind(",") < s.rfind("."):
+            # 1,234.56 형식
+            s = s.replace(",", "")
+        else:
+            # 1.234,56 형식 (유럽)
+            s = s.replace(".", "").replace(",", ".")
+    elif "," in s and "." not in s:
+        # 쉼표만 있음: 1,234 (천단위) 또는 1,5 (유럽 소수점)
+        # 쉼표 뒤 3자리면 천단위로 간주
+        parts = s.split(",")
+        if len(parts) == 2 and len(parts[1]) == 3:
+            s = s.replace(",", "")
+        else:
+            # 유럽식 소수점으로 간주
+            s = s.replace(",", ".")
+
+    return s
+
+
+def analyze_measurement_issues(
+    measurements: list[dict[str, Any]] | None,
+    *,
+    stop_after_limit: bool = True,
+    _debug: bool = False,
+) -> dict[str, list[str]]:
+    """
+    측정 데이터에서 빈 값/NaN/Inf 이슈 분석.
+
+    Args:
+        measurements: 측정 데이터 리스트
+        stop_after_limit: True면 10개 찾으면 스캔 중단 (성능 우선)
+                         False면 끝까지 스캔하여 정확한 overflow count 반환
+        _debug: 테스트 전용. True면 _debug_iterations 필드 추가.
+                프로덕션 경로에서는 절대 True로 호출하지 말 것.
+
+    Returns:
+        {
+            "empty_measured": ["직경 (SPEC: 3.0±0.1) - 2번째 줄", ...],
+            "nan_inf": ["길이 (SPEC: 10.0) - 3번째 줄", ...],
+            "has_more": True,  # stop_after_limit=True일 때 10개 초과 여부
+            "_debug_iterations": 10,  # _debug=True일 때만 포함
+        }
+
+    리스크 방어:
+    - 항목 식별자에 characteristic/spec_name/item 등 다양한 키 우선 검색
+    - SPEC 값도 함께 표시하여 현장에서 어떤 측정인지 명확히 식별
+    - "몇 번째 줄" 형태로 한글 표기
+    - 로컬 숫자 포맷 지원 (1,234.56, 1.234,56 등)
+    - N/A, —, 측정불가 등 플레이스홀더는 빈값으로 처리
+    - 성능: stop_after_limit=True(기본)면 10개 찾으면 즉시 종료
+    """
+    import math
+
+    result: dict[str, Any] = {
+        "empty_measured": [],
+        "nan_inf": [],
+        "has_more": False,  # 10개 초과 여부 (stop_after_limit=True일 때)
+    }
+
+    if not measurements:
+        return result
+
+    total_issues = 0  # 조기 종료 판단용
+    iterations = 0  # _debug=True일 때만 사용
+
+    for i, row in enumerate(measurements):
+        iterations += 1
+        # 항목 식별자 (다양한 키 우선순위로 검색)
+        item_name = (
+            row.get("characteristic")
+            or row.get("CHARACTERISTIC")
+            or row.get("spec_name")
+            or row.get("SPEC_NAME")
+            or row.get("ITEM")
+            or row.get("item")
+            or row.get("name")
+            or row.get("NAME")
+            or None
+        )
+
+        # SPEC/규격 값 (추가 컨텍스트)
+        spec_value = (
+            row.get("SPEC")
+            or row.get("spec")
+            or row.get("specification")
+            or row.get("nominal")
+            or row.get("NOMINAL")
+            or None
+        )
+
+        # 식별자 구성: "항목명 (SPEC: 값) - N번째 줄" 또는 "N번째 줄"
+        row_label = f"{i + 1}번째 줄"  # 1-indexed, 한글
+
+        if item_name:
+            item_str = escape_html(str(item_name))
+            if spec_value:
+                spec_str = escape_html(str(spec_value))
+                identifier = f"{item_str} (SPEC: {spec_str}) - {row_label}"
+            else:
+                identifier = f"{item_str} - {row_label}"
+        else:
+            identifier = row_label
+
+        # MEASURED 값 확인 (다양한 키)
+        measured = (
+            row.get("MEASURED")
+            or row.get("measured")
+            or row.get("actual")
+            or row.get("ACTUAL")
+            or row.get("value")
+            or row.get("VALUE")
+        )
+
+        # 빈 값 체크 (None, 빈 문자열, 플레이스홀더)
+        if measured is None:
+            if len(result["empty_measured"]) < MAX_MEASUREMENT_ISSUES_DISPLAY:
+                result["empty_measured"].append(identifier)
+            total_issues += 1
+            # 조기 종료: 10개 찾으면 스캔 중단
+            if stop_after_limit and total_issues >= MAX_MEASUREMENT_ISSUES_DISPLAY:
+                result["has_more"] = True
+                break
+            continue
+
+        measured_str = str(measured).strip()
+        if not measured_str or _is_empty_or_placeholder(measured_str):
+            if len(result["empty_measured"]) < MAX_MEASUREMENT_ISSUES_DISPLAY:
+                result["empty_measured"].append(identifier)
+            total_issues += 1
+            if stop_after_limit and total_issues >= MAX_MEASUREMENT_ISSUES_DISPLAY:
+                result["has_more"] = True
+                break
+            continue
+
+        # 숫자 정규화 시도 (로컬 포맷 지원)
+        normalized = _normalize_number_string(measured_str)
+        if normalized is None:
+            # 정규화 실패 → 문자열 측정값으로 간주 (에러 아님)
+            continue
+
+        # NaN/Inf 체크
+        try:
+            value = float(normalized)
+            if math.isnan(value) or math.isinf(value):
+                if len(result["nan_inf"]) < MAX_MEASUREMENT_ISSUES_DISPLAY:
+                    result["nan_inf"].append(identifier)
+                total_issues += 1
+                if stop_after_limit and total_issues >= MAX_MEASUREMENT_ISSUES_DISPLAY:
+                    result["has_more"] = True
+                    break
+        except (ValueError, TypeError):
+            # 변환 실패 → 문자열 측정값으로 간주 (에러 아님)
+            pass
+
+    # stop_after_limit=False일 때도 10개 초과하면 has_more 설정
+    if total_issues > MAX_MEASUREMENT_ISSUES_DISPLAY:
+        result["has_more"] = True
+
+    # 테스트 전용: _debug=True일 때만 반복 횟수 포함
+    if _debug:
+        result["_debug_iterations"] = iterations
+
+    return result
 
 
 # =============================================================================
@@ -452,6 +823,9 @@ async def send_message(
             measurements=extraction_result.measurements,
         )
 
+        # 측정값 이슈 분석
+        measurement_issues = analyze_measurement_issues(extraction_result.measurements)
+
         # 결과에 따른 응답 생성
         if validation.valid:
             assistant_response = (
@@ -472,6 +846,13 @@ async def send_message(
                 f"- 누락 필수값: {escape_html(missing)}<br>"
                 "누락값을 채워주시거나 override 해주세요."
             )
+
+        # 검증 오류 카드 HTML 생성 (에러/경고가 있을 때만)
+        validation_error_html = build_validation_error_html(
+            validation, measurement_issues=measurement_issues
+        )
+        if validation_error_html:
+            assistant_response += "<br>" + validation_error_html
 
     except TimeoutError:
         # 이미 위에서 처리됨 - 안전장치
@@ -551,17 +932,44 @@ async def upload_file(
     # 이미지 파일인지 확인
     file_ext = Path(filename).suffix.lower()
     photo_extensions = {".jpg", ".jpeg", ".png"}
+    # 지원되지 않는 이미지 확장자 (경고 표시 대상)
+    unsupported_image_extensions = {".gif", ".bmp", ".tiff", ".tif", ".webp", ".heic"}
     ocr_extensions = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf"}
     template_extensions = {".docx", ".dotx", ".odt"}  # 템플릿 후보 파일
 
     slot_key: str | None = None
     raw_path: str | None = None
+    unsupported_extension = False
 
     # UI에 표시할 HTML 메시지 조각들
     html_parts: list[str] = []
 
-    # 사진 슬롯 매핑 처리
-    if file_ext in photo_extensions:
+    # 지원되지 않는 이미지 확장자: 저장하지 않고 즉시 거절
+    # 저장하면 "왜 분석 안 됐지?" 디버깅 비용이 늘어남
+    if file_ext in unsupported_image_extensions:
+        unsupported_extension = True
+        user_content = f"[파일 첨부 시도: {filename}]"
+        # 저장하지 않음 - 메시지만 기록
+        intake.add_message(
+            role="user",
+            content=user_content,
+            # attachments 제외 - 저장 안 함
+        )
+        html_parts.append(build_user_message_html(user_content))
+
+        # 경고 메시지 (⚠️ 주황색 카드) + 다음 액션 힌트
+        warning_msg = (
+            f'<div class="warning-item">'
+            f'<span class="error-code">[UNSUPPORTED_EXT]</span> '
+            f"⚠️ 지원하지 않는 확장자: {safe_filename}<br>"
+            f"파일이 저장되지 않았습니다.<br>"
+            f'<small class="hint">💡 jpg/jpeg/png로 변환 후 다시 업로드해주세요.</small>'
+            f"</div>"
+        )
+        html_parts.append(build_assistant_message_html(warning_msg))
+
+    # 사진 슬롯 매핑 처리 (지원되는 확장자만)
+    elif file_ext in photo_extensions:
         photo_service = PhotoService(job_dir, definition_path)
 
         # 파일명으로 슬롯 매칭 시도
@@ -688,13 +1096,22 @@ async def upload_file(
     # 전체 HTML 조립
     messages_html = "\n".join(html_parts)
 
+    # 파일이 실제로 저장되었는지 여부
+    # 지원 안 되는 확장자는 저장하지 않음 (디버깅 비용 절감)
+    file_stored = not unsupported_extension and (raw_path is not None or file_ext not in photo_extensions)
+
     return {
-        "success": True,
+        "success": not unsupported_extension,  # 지원 안 되는 확장자면 success=False
+        "stored": file_stored,  # 파일이 실제로 저장되었는지 명확한 상태
         "filename": filename,
         "size": len(file_bytes),
         "session_id": session_id,
         "job_id": job_id,
-        "message": "파일이 업로드되었습니다.",
+        "message": (
+            "지원하지 않는 파일 형식입니다. 파일이 저장되지 않았습니다."
+            if unsupported_extension
+            else "파일이 업로드되었습니다."
+        ),
         "slot_mapped": slot_key,
         "raw_path": raw_path,
         "ocr_executed": ocr_result is not None,
@@ -705,6 +1122,8 @@ async def upload_file(
             else (ocr_result.text if ocr_result else None)
         ),
         "messages_html": messages_html,
+        # 지원되지 않는 확장자 플래그
+        "unsupported_extension": unsupported_extension,
         # 템플릿 등록 가능 여부
         "can_register_as_template": can_register_as_template,
         "suggested_template_id": suggested_template_id

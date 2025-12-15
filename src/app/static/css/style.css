@@ -471,9 +471,113 @@ body {
 .warning-item {
     padding: 0.75rem;
     background: #fef3c7;
+    border-left: 4px solid var(--warning);
     border-radius: var(--radius);
     margin-bottom: 0.5rem;
     font-size: 0.875rem;
+    color: #92400e;
+    line-height: 1.5;
+}
+
+/* =============================================================================
+   Validation Errors (에러/경고 카드)
+   스코프: .chat-container 또는 .message 내에서만 적용되도록 구체화
+   style-v2.css 충돌 방지
+   ============================================================================= */
+
+/* 검증 에러 컨테이너 */
+.chat-container .validation-errors,
+.message .validation-errors {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Override 에러 컨테이너 (시스템 처리 오류 - 별도 섹션) */
+.chat-container .override-errors,
+.message .override-errors {
+    margin-top: 0.75rem;
+    padding: 0.5rem;
+    background: #fef3c7;
+    border-radius: var(--radius);
+}
+
+.chat-container .override-errors-header,
+.message .override-errors-header {
+    font-weight: 600;
+    color: #92400e;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* 에러 아이템 (빨강)
+   단일 selector: .chat-container가 유일한 wrapper
+   specificity: 0,3,0 - 충분히 높음 */
+.chat-container .validation-errors .error-item {
+    padding: 0.75rem 1rem;
+    background: #fee2e2;
+    border-left: 4px solid var(--error);
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    color: #991b1b;
+    line-height: 1.5;
+}
+
+/* Overflow 알림 ("외 다수" 메시지) */
+.chat-container .validation-errors .error-item.overflow-notice {
+    background: #fef3c7;
+    border-left-color: var(--warning);
+    color: #92400e;
+    font-style: italic;
+}
+
+/* Override 에러 아이템 (주황/노랑 - 시스템 처리 오류) */
+.chat-container .override-error-item {
+    padding: 0.5rem 0.75rem;
+    background: #fff7ed;
+    border-left: 3px solid #f97316;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    color: #9a3412;
+    line-height: 1.4;
+    margin-bottom: 0.25rem;
+}
+
+/* 에러 코드 뱃지 */
+.chat-container .error-code {
+    display: inline-block;
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: #6b7280;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    margin-right: 0.25rem;
+}
+
+/* 힌트 텍스트 (다음 액션 가이드) */
+.chat-container .hint {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+/* br 태그 줄간격 */
+.chat-container .error-item br,
+.chat-container .warning-item br {
+    content: "";
+    display: block;
+    margin-top: 0.25rem;
+}
+
+/* 채팅 메시지 내 카드 스타일 - word-wrap */
+.chat-container .error-item,
+.chat-container .warning-item,
+.chat-container .override-error-item {
+    max-width: 100%;
+    word-break: break-word;
 }
 
 /* Actions */
