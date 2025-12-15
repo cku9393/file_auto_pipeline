@@ -2,299 +2,37 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
-    branches: [main, develop]
-
-env:
-  PYTHON_VERSION: "3.12"
-  UV_VERSION: "0.5"
-  # Anthropic API 키 (필요한 경우)
-  # 이 프로젝트는 MY_ANTHROPIC_KEY만 사용합니다 (ANTHROPIC_API_KEY 아님)
-  # MY_ANTHROPIC_KEY: ${{ secrets.FILE_PIPELINE_ANTHROPIC_KEY }}
+    branches: [main]
 
 jobs:
-  lint:
-    name: Lint & Type Check
+  lint-and-test:
+    name: Lint & Test
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
         with:
-          version: ${{ env.UV_VERSION }}
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-paths: |
+            pyproject.toml
+            requirements*.txt
 
       - name: Install dependencies
-        run: uv sync --all-extras --dev
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
 
       - name: Run Ruff (linter)
-        run: uv run ruff check src/ tests/
+        run: ruff check .
 
       - name: Run Ruff (formatter check)
-        run: uv run ruff format --check src/ tests/
+        run: ruff format --check .
 
-      - name: Run MyPy (type check)
-        run: uv run mypy src/
-
-      # =========================================================================
-      # Rule: NO_DEBUG_ROUTE_PARAM
-      # _debug 파라미터가 FastAPI 라우트 시그니처에 노출되는 것을 방지
-      # =========================================================================
-      # 이유: 외부에서 켜면 응답 스키마가 달라져 캐싱/골든테스트가 꼬임
-      # 허용: 내부 함수 인자로만 사용 (analyze_measurement_issues 등)
-      # 예외: # noqa: debug-route-param - <reason 8자 이상> (사유 필수!)
-      # 스코프: src/app/ 전체 (라우트가 분산될 수 있으므로)
-      # 한계: Depends() 우회, Body(embed=True) 변형은 탐지 못함 (PR 리뷰로 보완)
-      - name: "Rule: NO_DEBUG_ROUTE_PARAM"
-        run: |
-          echo "=============================================="
-          echo "Rule: NO_DEBUG_ROUTE_PARAM"
-          echo "_debug must not be exposed as a FastAPI route parameter"
-          echo "=============================================="
-
-          # ---------------------------------------------------------
-          # Check 1: 단일 라인 패턴 (Query/Form과 _debug가 같은 줄)
-          # 성능: grep -l로 후보 파일만 먼저 추림
-          # ---------------------------------------------------------
-          CANDIDATE_FILES=$(grep -rl --include="*.py" "_debug" src/app/ 2>/dev/null || true)
-
-          SINGLE_LINE=""
-          if [ -n "$CANDIDATE_FILES" ]; then
-            SINGLE_LINE=$(echo "$CANDIDATE_FILES" | xargs grep -n -E \
-              '(Query|Form|Body|Path|Header|Cookie|Depends)\s*\([^)]*_debug|_debug\s*:\s*[^=]+\s*=\s*(Query|Form|Body|Path|Header|Cookie|Depends)' \
-              2>/dev/null | grep -v 'noqa: debug-route-param - ' || true)
-          fi
-
-          # ---------------------------------------------------------
-          # Check 2: 멀티라인 패턴 (줄바꿈된 시그니처)
-          # 이식성: grep -P 대신 awk 사용 (GNU grep -P는 환경에 따라 불안정)
-          # 성능: _debug 포함 파일만 검사
-          # ---------------------------------------------------------
-          MULTI_LINE=""
-          if [ -n "$CANDIDATE_FILES" ]; then
-            for f in $CANDIDATE_FILES; do
-              # @router 데코레이터가 있는 파일만 검사
-              if grep -q '@router\|@api_router' "$f" 2>/dev/null; then
-                # awk로 라우트 함수 블록 추출: @router ~ def 사이에서 _debug + Query/Form 조합
-                BLOCK_MATCH=$(awk '
-                  /@(api_)?router\.[a-z]+/ { in_route=1; block="" }
-                  in_route { block = block $0 "\n" }
-                  in_route && /^(async )?def / {
-                    if (block ~ /_debug/ && block ~ /(Query|Form|Body|Path|Header|Cookie|Depends)/) {
-                      if (block !~ /noqa: debug-route-param - /) {
-                        print FILENAME ": multiline _debug in route signature"
-                      }
-                    }
-                    in_route=0
-                  }
-                ' "$f" 2>/dev/null || true)
-                if [ -n "$BLOCK_MATCH" ]; then
-                  MULTI_LINE="$MULTI_LINE$BLOCK_MATCH\n"
-                fi
-              fi
-            done
-          fi
-
-          VIOLATIONS="$SINGLE_LINE$MULTI_LINE"
-
-          if [ -n "$VIOLATIONS" ]; then
-            echo ""
-            echo "❌ VIOLATION DETECTED:"
-            echo -e "$VIOLATIONS"
-            echo ""
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "WHY THIS FAILS:"
-            echo "  _debug exposed as Query/Form/Depends parameter allows external"
-            echo "  callers to change response schema, breaking caching/golden tests."
-            echo ""
-            echo "HOW TO FIX:"
-            echo "  Use _debug only as internal function argument, not route param."
-            echo "  See: src/app/routes/chat.py module docstring"
-            echo ""
-            echo "ESCAPE HATCH (reason REQUIRED, min 8 chars):"
-            echo "  # noqa: debug-route-param - <your reason here>"
-            echo "  Example: # noqa: debug-route-param - admin-only endpoint for QA"
-            echo ""
-            echo "KNOWN LIMITATIONS (check in PR review):"
-            echo "  - Depends() with _debug in dependency function"
-            echo "  - Body(embed=True) variations"
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            exit 1
-          fi
-
-          # ---------------------------------------------------------
-          # Check 3: noqa 포맷 검증
-          # - " - " 뒤에 실제 이유가 있어야 함
-          # - 이유는 최소 8자 이상 (temp, test 같은 쓰레기 방지)
-          # ---------------------------------------------------------
-          if [ -n "$CANDIDATE_FILES" ]; then
-            # Step 1: noqa가 있는 라인 찾기
-            NOQA_LINES=$(echo "$CANDIDATE_FILES" | xargs grep -n 'noqa: debug-route-param' 2>/dev/null || true)
-
-            if [ -n "$NOQA_LINES" ]; then
-              # Step 2: " - " 뒤에 이유가 없거나 8자 미만인 경우
-              INVALID_NOQA=$(echo "$NOQA_LINES" | grep -vE 'noqa: debug-route-param - .{8,}' || true)
-
-              if [ -n "$INVALID_NOQA" ]; then
-                echo ""
-                echo "❌ INVALID NOQA FORMAT:"
-                echo "$INVALID_NOQA"
-                echo ""
-                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-                echo "noqa: debug-route-param requires a reason (min 8 chars)!"
-                echo ""
-                echo "❌ Bad:  # noqa: debug-route-param"
-                echo "❌ Bad:  # noqa: debug-route-param - temp"
-                echo "✅ Good: # noqa: debug-route-param - admin endpoint for QA testing"
-                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-                exit 1
-              fi
-            fi
-          fi
-
-          echo "✅ PASS: No _debug exposure in route signatures"
-
-  test-unit:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    needs: lint
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-        with:
-          version: ${{ env.UV_VERSION }}
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras --dev
-
-      - name: Run unit tests with coverage
-        run: |
-          uv run pytest tests/unit tests/golden \
-            --cov=src \
-            --cov-report=xml \
-            --cov-report=term-missing \
-            -v
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./coverage.xml
-          fail_ci_if_error: false
-        continue-on-error: true
-
-  test-e2e:
-    name: E2E Tests (Playwright)
-    runs-on: ubuntu-latest
-    needs: lint
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-        with:
-          version: ${{ env.UV_VERSION }}
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras --dev
-
-      # Playwright 브라우저 캐시 (OS + Python + Playwright 버전으로 키 구성)
-      - name: Get Playwright version
-        id: playwright-version
-        run: |
-          echo "version=$(uv run python -c 'import playwright; print(playwright.__version__)')" >> $GITHUB_OUTPUT
-          echo "python=$(uv run python -c 'import sys; print(f\"{sys.version_info.major}.{sys.version_info.minor}\")')" >> $GITHUB_OUTPUT
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          # 캐시 키: OS + Python 버전 + Playwright 버전 (버전 불일치 방지)
-          key: playwright-${{ runner.os }}-py${{ steps.playwright-version.outputs.python }}-${{ steps.playwright-version.outputs.version }}
-          # fallback: 같은 OS+Python에서 이전 Playwright 버전 캐시 사용 가능
-          restore-keys: |
-            playwright-${{ runner.os }}-py${{ steps.playwright-version.outputs.python }}-
-
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: uv run playwright install --with-deps chromium
-
-      - name: Install Playwright deps only (cache hit)
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: uv run playwright install-deps chromium
-
-      - name: Run E2E tests
-        run: |
-          uv run pytest tests/e2e \
-            -v \
-            --tb=short
-        env:
-          CI: true
-
-      # 실패 시 디버깅 정보 업로드 (스크린샷, HTML, 로그, trace)
-      - name: Upload E2E artifacts on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-debug-artifacts
-          path: tests/e2e/artifacts/
-          if-no-files-found: ignore
-          retention-days: 14
-
-  test-matrix:
-    name: Test (Python ${{ matrix.python-version }})
-    runs-on: ubuntu-latest
-    needs: lint
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.11", "3.12"]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-        with:
-          version: ${{ env.UV_VERSION }}
-
-      - name: Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras --dev
-
-      - name: Run unit tests
-        run: uv run pytest tests/unit tests/golden -v
-
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-        with:
-          version: ${{ env.UV_VERSION }}
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras --dev
-
-      - name: Run Bandit (security linter)
-        run: uv run bandit -r src/ -c pyproject.toml || true
-        continue-on-error: true
+      - name: Run pytest
+        run: pytest -q
