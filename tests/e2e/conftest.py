@@ -21,7 +21,8 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Generator
+from collections.abc import Generator
+from typing import TYPE_CHECKING
 
 import pytest
 
