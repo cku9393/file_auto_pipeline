@@ -43,5 +43,8 @@ jobs:
       - name: Install Playwright browsers
         run: python -m playwright install --with-deps chromium
 
-      - name: Run pytest
-        run: pytest -q
+      - name: Run unit tests
+        run: pytest -q --ignore=tests/e2e
+
+      - name: Run e2e tests
+        run: pytest -q tests/e2e
