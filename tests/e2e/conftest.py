@@ -19,6 +19,7 @@ E2E 테스트용 Playwright 설정.
 
 import os
 import re
+from collections.abc import Generator
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -27,15 +28,17 @@ import pytest
 
 # Playwright는 선택적 의존성 - 설치되어 있을 때만 import
 try:
-    from playwright.sync_api import Page
+    from playwright.sync_api import Browser, BrowserContext, Page
 
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:
     PLAYWRIGHT_AVAILABLE = False
+    Browser = None  # type: ignore[misc,assignment]
+    BrowserContext = None  # type: ignore[misc,assignment]
     Page = None  # type: ignore[misc,assignment]
 
 if TYPE_CHECKING:
-    from playwright.sync_api import Page
+    from playwright.sync_api import Browser, BrowserContext, Page
 
 # =============================================================================
 # 상수
@@ -103,7 +106,16 @@ if PLAYWRIGHT_AVAILABLE:
         return args
 
     @pytest.fixture
-    def page(context, page: "Page") -> "Page":
+    def context(
+        browser: "Browser", browser_context_args: dict
+    ) -> "Generator[BrowserContext, None, None]":
+        """브라우저 컨텍스트 생성."""
+        context = browser.new_context(**browser_context_args)
+        yield context
+        context.close()
+
+    @pytest.fixture
+    def page(context: "BrowserContext") -> "Generator[Page, None, None]":
         """
         페이지 fixture with 타임아웃 + 콘솔 로그 수집.
 
@@ -111,6 +123,11 @@ if PLAYWRIGHT_AVAILABLE:
         - 기본 액션: 30초
         - 네비게이션: 30초
         """
+        # CI에서 trace 시작 (page 생성 전에)
+        if IS_CI:
+            context.tracing.start(screenshots=True, snapshots=True, sources=True)
+
+        page = context.new_page()
         page.set_default_timeout(30000)
         page.set_default_navigation_timeout(30000)
 
@@ -122,11 +139,9 @@ if PLAYWRIGHT_AVAILABLE:
         # 테스트에서 접근 가능하도록 저장
         page._console_logs = console_logs  # type: ignore[attr-defined]
 
-        # CI에서 trace 시작
-        if IS_CI:
-            context.tracing.start(screenshots=True, snapshots=True, sources=True)
-
         yield page
+
+        page.close()
 
 
 # =============================================================================

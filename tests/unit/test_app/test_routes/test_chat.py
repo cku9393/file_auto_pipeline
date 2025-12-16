@@ -637,7 +637,11 @@ class TestBuildValidationErrorHtml:
         validation = ValidationResult(
             valid=False,
             invalid_values=[
-                {"field": "result", "value": "UNKNOWN_VALUE", "error": "Invalid result"},
+                {
+                    "field": "result",
+                    "value": "UNKNOWN_VALUE",
+                    "error": "Invalid result",
+                },
                 {"field": "lot", "value": "<script>", "error": "Invalid format"},
             ],
         )
@@ -680,7 +684,9 @@ class TestBuildValidationErrorHtml:
             "nan_inf": ["항목C - 2번째 줄"],
         }
 
-        html = build_validation_error_html(validation, measurement_issues=measurement_issues)
+        html = build_validation_error_html(
+            validation, measurement_issues=measurement_issues
+        )
 
         # 컨테이너 확인
         assert "validation-errors" in html
@@ -877,7 +883,9 @@ class TestBuildValidationErrorHtml:
             "has_more": True,
         }
 
-        html = build_validation_error_html(validation, measurement_issues=measurement_issues)
+        html = build_validation_error_html(
+            validation, measurement_issues=measurement_issues
+        )
 
         # "외 다수" 알림 메시지 포함
         assert "외 다수" in html
@@ -907,7 +915,9 @@ class TestBuildValidationErrorHtml:
             "has_more": False,
         }
 
-        html = build_validation_error_html(validation, measurement_issues=measurement_issues)
+        html = build_validation_error_html(
+            validation, measurement_issues=measurement_issues
+        )
 
         # 1) validation-errors 컨테이너 확인
         assert html.startswith('<div class="validation-errors">')

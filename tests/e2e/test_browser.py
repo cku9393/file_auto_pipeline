@@ -272,10 +272,11 @@ def test_css_validation_errors_class_applied(page: Page, live_server: str) -> No
     page.goto(f"{live_server}/chat")
     page.wait_for_selector(".chat-container", state="visible")
 
-    # Then: style.css link 태그가 존재하는지 확인
+    # Then: 스타일시트 link 태그가 존재하는지 확인
     # (computed style 체크는 flaky하므로 link 태그 존재만 확인)
-    css_link = page.locator('link[rel="stylesheet"][href*="style.css"]')
-    assert css_link.count() >= 1, "style.css link 태그가 없습니다"
+    # Note: 파일명(style.css, style-v2.css 등)은 변경될 수 있으므로 href*="style"로 확인
+    css_link = page.locator('link[rel="stylesheet"][href*="style"]')
+    assert css_link.count() >= 1, "stylesheet link 태그가 없습니다"
 
     # chat-container가 존재하고 visible한지 확인
     chat_container = page.locator(".chat-container")

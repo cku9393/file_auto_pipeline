@@ -359,7 +359,9 @@ def build_validation_error_html(
 
     if validation_items:
         html_parts.append(
-            '<div class="validation-errors">\n' + "\n".join(validation_items) + "\n</div>"
+            '<div class="validation-errors">\n'
+            + "\n".join(validation_items)
+            + "\n</div>"
         )
 
     if override_items:
@@ -398,10 +400,28 @@ def _get_missing_field_hint(missing_fields: list[str]) -> str:
 MAX_MEASUREMENT_ISSUES_DISPLAY = 10
 
 # 빈값/무효값으로 처리할 토큰들 (대소문자 무시)
-EMPTY_VALUE_TOKENS = frozenset({
-    "n/a", "na", "none", "-", "—", "--", "null", "nil", "미측정", "측정불가",
-    ".", "..", "...", "x", "xx", "xxx", "ㅡ", "ㅡㅡ",
-})
+EMPTY_VALUE_TOKENS = frozenset(
+    {
+        "n/a",
+        "na",
+        "none",
+        "-",
+        "—",
+        "--",
+        "null",
+        "nil",
+        "미측정",
+        "측정불가",
+        ".",
+        "..",
+        "...",
+        "x",
+        "xx",
+        "xxx",
+        "ㅡ",
+        "ㅡㅡ",
+    }
+)
 
 
 def _is_empty_or_placeholder(value: str) -> bool:
@@ -1101,7 +1121,9 @@ async def upload_file(
 
     # 파일이 실제로 저장되었는지 여부
     # 지원 안 되는 확장자는 저장하지 않음 (디버깅 비용 절감)
-    file_stored = not unsupported_extension and (raw_path is not None or file_ext not in photo_extensions)
+    file_stored = not unsupported_extension and (
+        raw_path is not None or file_ext not in photo_extensions
+    )
 
     return {
         "success": not unsupported_extension,  # 지원 안 되는 확장자면 success=False
