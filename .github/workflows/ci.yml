@@ -34,5 +34,14 @@ jobs:
       - name: Run Ruff (formatter check)
         run: ruff format --check .
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') }}
+
+      - name: Install Playwright browsers
+        run: python -m playwright install --with-deps chromium
+
       - name: Run pytest
         run: pytest -q
