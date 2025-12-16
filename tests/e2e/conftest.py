@@ -19,9 +19,9 @@ E2E 테스트용 Playwright 설정.
 
 import os
 import re
+from collections.abc import Generator
 from datetime import datetime
 from pathlib import Path
-from collections.abc import Generator
 from typing import TYPE_CHECKING
 
 import pytest
